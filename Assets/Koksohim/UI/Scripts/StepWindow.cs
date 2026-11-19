@@ -49,7 +49,9 @@ namespace KoksUI
         public Button confirmButton;
 
         bool wired;
+        bool open;
         Coroutine fade;
+        Canvas canvas;
 
         void Awake()
         {
@@ -94,13 +96,18 @@ namespace KoksUI
 
         public bool IsOpen
         {
-            get { return gameObject.activeSelf; }
+            get { return open; }
         }
 
         public void Show()
         {
-            if (gameObject.activeSelf) return;
-            gameObject.SetActive(true);
+            if (open) return;
+            open = true;
+            if (canvas == null) canvas = GetComponent<Canvas>();
+            // камера нужна до включения: иначе XR-рейкастер регистрирует канвас без неё и сыплет KeyNotFoundException
+            if (canvas != null && canvas.worldCamera == null) canvas.worldCamera = Camera.main;
+            if (!gameObject.activeSelf) gameObject.SetActive(true);
+            if (canvas != null) canvas.enabled = true;
             Wire();
             Place();
             if (group != null) group.alpha = 0f;
@@ -143,7 +150,7 @@ namespace KoksUI
 
         public void Hide()
         {
-            if (!gameObject.activeSelf) return;
+            if (!open) return;
             StartFade(group != null ? group.alpha : 1f, 0f, true);
         }
 
@@ -166,7 +173,12 @@ namespace KoksUI
                 }
                 group.alpha = to;
             }
-            if (deactivate) gameObject.SetActive(false);
+            if (deactivate)
+            {
+                // объект не выключаем (выключение канваса с XR-рейкастером даёт ошибку) — просто скрываем канвас
+                open = false;
+                if (canvas != null) canvas.enabled = false;
+            }
             fade = null;
         }
     }
