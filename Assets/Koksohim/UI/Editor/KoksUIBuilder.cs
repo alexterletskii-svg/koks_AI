@@ -345,7 +345,7 @@ namespace KoksUI.Editor
             return root;
         }
 
-        static ColorBlock Tint(Color normal, Color hi, Color pressed, Color disabled)
+        internal static ColorBlock Tint(Color normal, Color hi, Color pressed, Color disabled)
         {
             var cb = ColorBlock.defaultColorBlock;
             cb.normalColor = normal;
