@@ -55,6 +55,7 @@ namespace KoksUI
         {
             Apply();
             Wire();
+            UIDepth.AlwaysOnTop(gameObject);
         }
 
         void Wire()
