@@ -17,13 +17,25 @@ namespace KoksUI
         [Tooltip("Допуск по высоте головы относительно точки: от и до, м")]
         public float minHeight = -1f;
         public float maxHeight = 3.5f;
+        [Tooltip("Через сколько секунд окно закроется само (0 — не закрывать)")]
+        public float autoCloseSeconds = 10f;
         public UnityEvent onArrived;
 
         bool shown;
+        float closeAt = -1f;
 
         void Update()
         {
-            if (shown || window == null) return;
+            if (shown)
+            {
+                if (closeAt > 0f && Time.time >= closeAt)
+                {
+                    closeAt = -1f;
+                    if (window != null) window.Hide();
+                }
+                return;
+            }
+            if (window == null) return;
             Camera cam = Camera.main;
             if (cam == null) return;
             Vector3 d = cam.transform.position - position;
@@ -33,6 +45,7 @@ namespace KoksUI
             shown = true;
             onArrived.Invoke();
             window.Show();
+            if (autoCloseSeconds > 0f) closeAt = Time.time + autoCloseSeconds;
         }
     }
 }

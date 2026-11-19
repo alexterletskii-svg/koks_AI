@@ -7,7 +7,7 @@ namespace KoksUI
 {
     /// <summary>
     /// Вводное окно сценария: появляется при старте сцены слева-вверху перед игроком,
-    /// через showSeconds плавно гаснет. Закрыть раньше можно крестиком.
+    /// через closeAfterSeconds плавно гаснет. Закрыть раньше можно крестиком.
     /// Тексты правятся прямо в Inspector (поля «Тексты»).
     /// </summary>
     public class IntroWindow : MonoBehaviour
@@ -22,7 +22,7 @@ namespace KoksUI
 
         [Header("Показ")]
         [Tooltip("Сколько секунд окно висит до автоматического закрытия")]
-        public float showSeconds = 12f;
+        public float closeAfterSeconds = 10f;
         public float fadeSeconds = 0.5f;
         [Tooltip("Расстояние от игрока, м")]
         public float distance = 1.3f;
@@ -88,10 +88,10 @@ namespace KoksUI
             yield return Fade(0f, 1f, 0.4f);
 
             float t = 0f;
-            while (t < showSeconds && !closing)
+            while (t < closeAfterSeconds && !closing)
             {
                 t += Time.unscaledDeltaTime;
-                SetProgress(1f - t / Mathf.Max(0.01f, showSeconds));
+                SetProgress(1f - t / Mathf.Max(0.01f, closeAfterSeconds));
                 yield return null;
             }
             if (!closing) Close();
