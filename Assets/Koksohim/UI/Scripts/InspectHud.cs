@@ -50,6 +50,11 @@ namespace KoksUI
             Refresh();
         }
 
+        public bool IsFree(InspectPoint p)
+        {
+            return current == null || current == p;
+        }
+
         public int Total { get { return points.Count; } }
         public int Done { get { return done; } }
 

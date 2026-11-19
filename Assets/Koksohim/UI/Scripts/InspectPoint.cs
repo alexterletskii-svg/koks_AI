@@ -24,6 +24,9 @@ namespace KoksUI
         [Tooltip("Высота маркера над объектом, м")]
         public float markerHeight = 0.18f;
 
+        [Tooltip("Писать в Console наведение/осмотр (для отладки)")]
+        public bool debugLog = true;
+
         [Header("Ссылки (заполняются билдером)")]
         public InspectHud hud;
         public Transform marker;
@@ -59,53 +62,69 @@ namespace KoksUI
             interactable.hoverExited.RemoveListener(OnHoverExit);
         }
 
+        Renderer[] rends;
+
         void Start()
         {
-            var rs = GetComponentsInChildren<Renderer>();
-            Bounds b = new Bounds(transform.position, Vector3.zero);
-            bool first = true;
-            foreach (var r in rs)
-            {
-                if (first) { b = r.bounds; first = false; }
-                else b.Encapsulate(r.bounds);
-            }
-            MarkerPosition = b.center + Vector3.up * (b.extents.y + markerHeight);
-            if (marker != null)
-            {
-                marker.position = MarkerPosition;
-                markerBase = marker.localScale;
-            }
+            rends = GetComponentsInChildren<Renderer>();
+            UpdateMarkerPosition();
+            if (marker != null) markerBase = marker.localScale;
             SetMarkerState();
+        }
+
+        // объект может двигаться анимацией — маркер едет вместе с ним
+        void UpdateMarkerPosition()
+        {
+            if (rends == null || rends.Length == 0) { MarkerPosition = transform.position + Vector3.up * markerHeight; }
+            else
+            {
+                Bounds b = rends[0].bounds;
+                for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+                MarkerPosition = b.center + Vector3.up * (b.extents.y + markerHeight);
+            }
+            if (marker != null) marker.position = MarkerPosition;
         }
 
         void OnHoverEnter(HoverEnterEventArgs args)
         {
             hovered = true;
-            held = 0f;
+            if (debugLog) Debug.Log("[Inspect] наведение: " + name + " (" + group + ", " + title + ")");
             if (hud == null) return;
             if (Inspected) hud.ShowCard(this);
-            else hud.ShowProgress(this, 0f);
+            else hud.ShowProgress(this, held / Mathf.Max(0.1f, fillSeconds));
         }
 
         void OnHoverExit(HoverExitEventArgs args)
         {
             hovered = false;
-            held = 0f;
-            if (hud != null) hud.Hide(this);
+            if (debugLog) Debug.Log("[Inspect] луч ушёл: " + name);
+            if (hud != null && Inspected) hud.Hide(this);
         }
 
         void Update()
         {
-            if (!hovered || Inspected || hud == null) return;
-            held += Time.deltaTime;
-            hud.ShowProgress(this, held / Mathf.Max(0.1f, fillSeconds));
-            if (held >= fillSeconds) Complete();
+            if (hud == null || Inspected) return;
+            float fill = Mathf.Max(0.1f, fillSeconds);
+            if (hovered)
+            {
+                held += Time.deltaTime;
+                hud.ShowProgress(this, held / fill);
+                if (held >= fill) Complete();
+            }
+            else if (held > 0f)
+            {
+                // луч в руке дрожит: прогресс не обнуляется мгновенно, а плавно спадает
+                held -= Time.deltaTime * 1.5f;
+                if (held <= 0f) { held = 0f; hud.Hide(this); }
+                else if (hud.IsFree(this)) hud.ShowProgress(this, held / fill);
+            }
         }
 
         void LateUpdate()
         {
             if (marker == null) return;
             Camera cam = Camera.main;
+            UpdateMarkerPosition();
             if (cam != null) marker.rotation = cam.transform.rotation;
             float k = Inspected ? 0.8f : 1f + 0.12f * Mathf.Sin(Time.time * 4f);
             marker.localScale = markerBase * k;
@@ -114,6 +133,7 @@ namespace KoksUI
         void Complete()
         {
             Inspected = true;
+            if (debugLog) Debug.Log("[Inspect] осмотрено: " + name + " (" + group + ", " + title + ")");
             SetMarkerState();
             hud.NotifyInspected(this);
             if (hovered) hud.ShowCard(this);
