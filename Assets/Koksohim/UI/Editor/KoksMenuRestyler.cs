@@ -72,6 +72,9 @@ namespace KoksUI.Editor
 
             RestyleTutorial(tutorial);
             RestyleSelect(select, tutorial);
+            Transform siz = canvas.transform.Find("PanelSiz");
+            if (siz != null) RestyleSiz(siz);
+            else Debug.LogWarning("[Koks UI] Не найдена PanelSiz.");
 
             // меню чуть крупнее: 1,8 м -> 2,16 м по ширине
             canvas.transform.localScale = Vector3.one * 0.0012f;
@@ -314,6 +317,86 @@ namespace KoksUI.Editor
             Style(t, font, size, color, align, false, 0f, 0f);
             t.raycastTarget = false;
             return t;
+        }
+
+        // ------------------------------------------------------ Выбор СИЗ
+
+        static void RestyleSiz(Transform panel)
+        {
+            StylePanel(panel);
+            var line = new Color(1f, 1f, 1f, 0.16f);
+
+            // шапка с заданием
+            var hdr = panel.Find("Header");
+            if (hdr != null)
+            {
+                var r = (RectTransform)hdr;
+                SetRect(r, -376f, 405f, 970f, 100f);
+                Fill(hdr.GetComponent<Image>(), Card);
+                AddFrame(r, line);
+                AddAccent(r, Heat);
+                var t = FirstOriginalText(hdr);
+                if (t != null)
+                {
+                    SetRect((RectTransform)t.transform, 12f, 0f, 930f, 90f);
+                    Style(t, medium, 26f, Ink, TextAlignmentOptions.MidlineLeft, true, 20f, 28f);
+                }
+            }
+
+            // список СИЗ
+            var scroll = panel.Find("Scroll View");
+            if (scroll != null)
+            {
+                var r = (RectTransform)scroll;
+                r.anchoredPosition = new Vector2(r.anchoredPosition.x, -5f);
+                Fill(scroll.GetComponent<Image>(), Hex("161C21"));
+
+                var viewport = scroll.Find("Viewport");
+                if (viewport != null) Fill(viewport.GetComponent<Image>(), Hex("161C21"));
+
+                var content = scroll.Find("Viewport/Content");
+                if (content != null)
+                {
+                    foreach (Transform item in content)
+                    {
+                        Fill(item.GetComponent<Image>(), Hex("252D34"));
+                        AddFrame((RectTransform)item, line);
+                        var t = FirstOriginalText(item);
+                        if (t != null)
+                            Style(t, medium, 24f, Ink, TextAlignmentOptions.MidlineLeft, true, 16f, 26f);
+                    }
+                }
+
+                var bar = scroll.Find("Scrollbar Vertical");
+                if (bar != null)
+                {
+                    Fill(bar.GetComponent<Image>(), Hex("0F1317"));
+                    var handle = bar.Find("Sliding Area/Handle");
+                    if (handle != null) Fill(handle.GetComponent<Image>(), Heat);
+                }
+
+                AddFrame(r, line);
+                Transform f = scroll.Find("KoksFrame");
+                if (f != null) f.SetAsLastSibling(); // рамка поверх списка
+            }
+
+            // карточка с фигурой (слои одежды лежат сверху и не трогаются)
+            var bg = panel.Find("Bg");
+            if (bg != null)
+            {
+                var r = (RectTransform)bg;
+                SetRect(r, 507f, -5f, 740f, 960f);
+                Fill(bg.GetComponent<Image>(), Hex("232B33"));
+                AddFrame(r, line);
+            }
+
+            // кнопка «Проверить»
+            var check = panel.Find("Button (Legacy)");
+            if (check != null)
+            {
+                SetRect((RectTransform)check, -416f, -430f, 300f, 80f);
+                StyleHeatButton(check.GetComponent<Button>(), check.GetComponent<Image>(), 34f);
+            }
         }
 
         // ------------------------------------------------------- общее
