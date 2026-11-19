@@ -18,7 +18,7 @@ namespace KoksUI
         public float minHeight = -1f;
         public float maxHeight = 3.5f;
         [Tooltip("Через сколько секунд окно закроется само (0 — не закрывать)")]
-        public float autoCloseSeconds = 10f;
+        public float showSeconds = 6f;
         public UnityEvent onArrived;
 
         bool shown;
@@ -45,7 +45,7 @@ namespace KoksUI
             shown = true;
             onArrived.Invoke();
             window.Show();
-            if (autoCloseSeconds > 0f) closeAt = Time.time + autoCloseSeconds;
+            if (showSeconds > 0f) closeAt = Time.time + showSeconds;
         }
     }
 }
