@@ -28,6 +28,17 @@ namespace KoksUI
 
         float nextLog;
 
+        void Awake()
+        {
+            // старые скрипты уничтожают круг при входе игрока — для шага осмотра это не нужно
+            foreach (var mb in GetComponents<MonoBehaviour>())
+            {
+                if (mb == null) continue;
+                string n = mb.GetType().Name;
+                if (n == "DestroyOnTriggerByTag" || n == "DestroyOnCollisionByTag") mb.enabled = false;
+            }
+        }
+
         void Start()
         {
             Subscribe();

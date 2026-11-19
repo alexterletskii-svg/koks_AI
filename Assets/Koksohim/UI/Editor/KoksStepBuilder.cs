@@ -146,6 +146,8 @@ namespace KoksUI.Editor
             sm.window = win;
             var killer = marker.GetComponent<DestroyOnCollisionByTag>();
             if (killer != null) killer.enabled = false;
+            var killer2 = marker.GetComponent<DestroyOnTriggerByTag>();
+            if (killer2 != null) killer2.enabled = false;
 
             root.SetActive(false); // окно появится, когда игрок встанет в круг
 
