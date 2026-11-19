@@ -99,9 +99,14 @@ namespace KoksUI.Editor
                     continue;
                 }
 
-                if (rt.sizeDelta.x > 1800f)
+                if (rt.sizeDelta.x > 1800f || (img != null && img.sprite != null && img.sprite.name == "i2"))
                 {
-                    // схема контроллеров — картинка как есть
+                    // схема контроллеров: ровно между боковыми блоками
+                    SetRect(rt, 0f, -108f, 680f, 382f);
+                    img.type = Image.Type.Simple;
+                    img.preserveAspect = true;
+                    img.color = Color.white;
+                    AddFrame(rt, new Color(1f, 1f, 1f, 0.3f));
                     continue;
                 }
 
@@ -286,6 +291,7 @@ namespace KoksUI.Editor
             img.sprite = Spr("chip");
             img.type = Image.Type.Sliced;
             img.color = color;
+            img.canvasRenderer.SetAlpha(1f);
         }
 
         static void AddFrame(RectTransform parent, Color color)
@@ -409,6 +415,7 @@ namespace KoksUI.Editor
 
         static void SetRect(RectTransform r, float x, float y, float w, float h)
         {
+            r.localScale = Vector3.one; // в сцене у части объектов масштаб 0.5
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.pivot = new Vector2(0.5f, 0.5f);
             r.anchoredPosition = new Vector2(x, y);
