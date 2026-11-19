@@ -15,14 +15,14 @@ namespace KoksUI.Editor
         const string SpritesDir = Root + "/Sprites";
         const string PrefabsDir = Root + "/Prefabs";
 
-        static readonly Color Heat = Hex("FFC400");
-        static readonly Color HeatHi = Hex("FFD84D");
-        static readonly Color Ok = Hex("4BD37B");
-        static readonly Color Ink = Hex("EEF1F3");
-        static readonly Color Mute = Hex("A4AEB6");
-        static readonly Color Dark = Hex("14181C");
+        internal static readonly Color Heat = Hex("FFC400");
+        internal static readonly Color HeatHi = Hex("FFD84D");
+        internal static readonly Color Ok = Hex("4BD37B");
+        internal static readonly Color Ink = Hex("EEF1F3");
+        internal static readonly Color Mute = Hex("A4AEB6");
+        internal static readonly Color Dark = Hex("14181C");
 
-        static Color Hex(string h, float a = 1f)
+        internal static Color Hex(string h, float a = 1f)
         {
             ColorUtility.TryParseHtmlString("#" + h, out Color c);
             c.a = a;
@@ -178,12 +178,12 @@ namespace KoksUI.Editor
             EditorUtility.SetDirty(fa);
         }
 
-        static TMP_FontAsset LoadFont(string assetName)
+        internal static TMP_FontAsset LoadFont(string assetName)
         {
             return AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontsDir + "/" + assetName + " SDF.asset");
         }
 
-        static Sprite Spr(string name)
+        internal static Sprite Spr(string name)
         {
             var s = AssetDatabase.LoadAssetAtPath<Sprite>(SpritesDir + "/" + name + ".png");
             if (s == null) Debug.LogError("[Koks UI] Нет спрайта " + name);
@@ -192,7 +192,7 @@ namespace KoksUI.Editor
 
         // ------------------------------------------------------- помощники
 
-        static RectTransform R(string name, Transform parent, float x, float y, float w, float h)
+        internal static RectTransform R(string name, Transform parent, float x, float y, float w, float h)
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
@@ -205,7 +205,7 @@ namespace KoksUI.Editor
             return r;
         }
 
-        static Image Img(string name, Transform parent, Sprite sprite, Color color,
+        internal static Image Img(string name, Transform parent, Sprite sprite, Color color,
                          float x, float y, float w, float h, Image.Type type = Image.Type.Sliced)
         {
             var r = R(name, parent, x, y, w, h);
@@ -217,7 +217,7 @@ namespace KoksUI.Editor
             return im;
         }
 
-        static TextMeshProUGUI Txt(string name, Transform parent, string text, TMP_FontAsset font,
+        internal static TextMeshProUGUI Txt(string name, Transform parent, string text, TMP_FontAsset font,
                                    float size, Color color, TextAlignmentOptions align,
                                    float x, float y, float w, float h, bool wrap = false)
         {
