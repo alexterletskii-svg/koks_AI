@@ -13,7 +13,7 @@ namespace KoksUI
         public StepWindow window;
 
         [Tooltip("Радиус срабатывания по горизонтали, м")]
-        public float radius = 1.0f;
+        public float radius = 1.5f;
         [Tooltip("Допуск по высоте: голова не ниже круга на столько и не выше, чем на maxHeight")]
         public float minHeight = -0.5f;
         public float maxHeight = 3.0f;
@@ -26,9 +26,12 @@ namespace KoksUI
         bool shown;
         bool subscribed;
 
+        float nextLog;
+
         void Start()
         {
             Subscribe();
+            Debug.Log("[StepMarker] старт на '" + name + "', окно: " + (window != null ? window.name : "НЕ НАЗНАЧЕНО") + ", радиус " + radius);
         }
 
         void Subscribe()
@@ -44,11 +47,20 @@ namespace KoksUI
             Subscribe();
 
             Camera cam = Camera.main;
-            if (cam == null) return;
+            if (cam == null)
+            {
+                if (Time.time > nextLog) { nextLog = Time.time + 5f; Debug.LogWarning("[StepMarker] нет камеры с тегом MainCamera"); }
+                return;
+            }
 
             Vector3 d = cam.transform.position - transform.position;
             float dy = d.y;
             d.y = 0f;
+            if (Time.time > nextLog)
+            {
+                nextLog = Time.time + 3f;
+                Debug.Log("[StepMarker] до круга по горизонтали " + d.magnitude.ToString("F2") + " м, по высоте " + dy.ToString("F2") + " м");
+            }
             if (d.magnitude > radius) return;
             if (dy < minHeight || dy > maxHeight) return;
 
