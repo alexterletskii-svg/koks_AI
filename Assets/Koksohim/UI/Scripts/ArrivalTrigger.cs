@@ -12,8 +12,8 @@ namespace KoksUI
         public StepWindow window;
         [Tooltip("Точка, куда телепортируется игрок (мировые координаты)")]
         public Vector3 position;
-        [Tooltip("Радиус по горизонтали, м")]
-        public float radius = 2.5f;
+        [Tooltip("Радиус по горизонтали, м (с запасом: голова после телепорта может быть в стороне от точки)")]
+        public float zoneRadius = 12f;
         [Tooltip("Допуск по высоте головы относительно точки: от и до, м")]
         public float minHeight = -1f;
         public float maxHeight = 3.5f;
@@ -29,7 +29,7 @@ namespace KoksUI
             Vector3 d = cam.transform.position - position;
             float dy = d.y;
             d.y = 0f;
-            if (d.magnitude > radius || dy < minHeight || dy > maxHeight) return;
+            if (d.magnitude > zoneRadius || dy < minHeight || dy > maxHeight) return;
             shown = true;
             onArrived.Invoke();
             window.Show();
