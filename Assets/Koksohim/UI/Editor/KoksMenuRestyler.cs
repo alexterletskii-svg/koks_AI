@@ -168,24 +168,31 @@ namespace KoksUI.Editor
             var title = EnsureText(panel, "KoksTitle", "Выберите сценарий", heading, 64f, Color.white,
                                    TextAlignmentOptions.MidlineLeft, -300f, 420f, 1000f, 90f);
             title.raycastTarget = false;
-            var hint = EnsureText(panel, "KoksHint", "Наведите луч на сценарий и нажмите триггер", body, 26f, Mute,
-                                  TextAlignmentOptions.Center, 0f, -430f, 1600f, 44f);
+            var hint = EnsureText(panel, "KoksHint", "Наведите луч на карточку и нажмите триггер", body, 26f, Mute,
+                                  TextAlignmentOptions.Center, 0f, -440f, 1600f, 44f);
             hint.raycastTarget = false;
 
             string[] names = { "ButtonTop", "ButtonTop (1)", "ButtonTop (2)" };
-            float[] ys = { 250f, 56f, -138f };
+            string[] icons = { "icon_search", "icon_flame", "icon_box" };
+            string[] subs = { "Учебный сценарий", "Сценарий в разработке", "Сценарий в разработке" };
+            const float CW = 533f, CH = 640f;
 
             for (int i = 0; i < names.Length; i++)
             {
-                Transform row = panel.Find(names[i]);
-                if (row == null) { Debug.LogWarning("[Koks UI] Нет кнопки " + names[i]); continue; }
+                Transform card = panel.Find(names[i]);
+                if (card == null) { Debug.LogWarning("[Koks UI] Нет кнопки " + names[i]); continue; }
 
-                var rt = (RectTransform)row;
-                var btn = row.GetComponent<Button>();
-                var img = row.GetComponent<Image>();
+                var rt = (RectTransform)card;
+                var btn = card.GetComponent<Button>();
+                var img = card.GetComponent<Image>();
                 bool ready = i == 0; // у остальных сценариев пока нет onClick
 
-                SetRect(rt, 0f, ys[i], 1640f, 170f);
+                // убрать прежние украшения
+                for (int k = card.childCount - 1; k >= 0; k--)
+                    if (card.GetChild(k).name.StartsWith("Koks"))
+                        Object.DestroyImmediate(card.GetChild(k).gameObject);
+
+                SetRect(rt, (i - 1) * 573f, -50f, CW, CH);
                 img.sprite = Spr("chip");
                 img.type = Image.Type.Sliced;
                 img.color = Color.white;
@@ -203,30 +210,71 @@ namespace KoksUI.Editor
                 btn.targetGraphic = img;
                 btn.colors = cb;
 
-                Clean(row, "KoksFrame");
-                Clean(row, "KoksAccent");
-                Clean(row, "KoksNum");
-                Clean(row, "KoksAction");
-                AddFrame(rt, new Color(1f, 1f, 1f, ready ? 0.22f : 0.1f));
-                AddAccent(rt, ready ? Heat : Hex("3A444C"));
+                Color accent = ready ? Heat : Hex("5A656D");
 
-                var num = EnsureText(row, "KoksNum", "0" + (i + 1), heading, 72f, ready ? Heat : Hex("5A656D"),
-                                     TextAlignmentOptions.Center, -700f, 0f, 160f, 110f);
-                num.raycastTarget = false;
-                var act = EnsureText(row, "KoksAction", ready ? "Выбрать" : "Скоро", heading, 36f,
-                                     ready ? Heat : Hex("5A656D"),
-                                     TextAlignmentOptions.MidlineRight, 690f, 0f, 220f, 60f);
-                act.raycastTarget = false;
+                // обложка с иконкой
+                KImg(card, "KoksCover", null, Hex("161C21"), 0, 0, CW, 230, Image.Type.Simple);
+                KImg(card, "KoksStripes", Spr("stripes_tile"), Color.white, 0, 0, CW, 230, Image.Type.Tiled);
+                KImg(card, "KoksIcon", Spr(icons[i]), accent, (CW - 130f) / 2f, 50f, 130f, 130f, Image.Type.Simple);
 
-                var tmp = FirstOriginalText(row);
+                // тег статуса
+                var tag = KImg(card, "KoksTag", Spr("chip"), new Color(0.078f, 0.094f, 0.11f, 1f), 18, 18, 160, 42, Image.Type.Sliced);
+                KImg(tag.transform, "KoksDot", Spr("dot"), ready ? Hex("4BD37B") : Hex("5A656D"), 14, 12, 18, 18, Image.Type.Simple);
+                KTxt(tag.transform, "KoksTagText", ready ? "Доступен" : "Скоро", medium, 24f, Color.white,
+                     TextAlignmentOptions.MidlineLeft, 40, 0, 116, 42);
+
+                // подпись и «кнопка» (вся карточка — кнопка, это только вид)
+                KTxt(card, "KoksSub", subs[i], body, 26f, Mute, TextAlignmentOptions.MidlineLeft, 28, 430, 477, 40);
+                var action = KImg(card, "KoksAction", Spr(ready ? "btn_heat" : "btn_outline"),
+                                  ready ? Heat : new Color(1f, 1f, 1f, 0.25), 28, 528, 477, 84, Image.Type.Sliced);
+                KTxt(action.transform, "KoksActionText", ready ? "Выбрать" : "Скоро", heading, 34f,
+                     ready ? Dark : Mute, TextAlignmentOptions.Center, 0, 0, 477, 84);
+
+                // название — прежний Text, теперь TMP
+                var tmp = FirstOriginalText(card);
                 if (tmp != null)
                 {
-                    SetRect((RectTransform)tmp.transform, -20f, 0f, 1160f, 150f);
-                    Style(tmp, heading, 44f, ready ? Color.white : Mute, TextAlignmentOptions.MidlineLeft, true, 26f, 46f);
+                    SetRect((RectTransform)tmp.transform, 0f, -5f, 477f, 190f);
+                    Style(tmp, heading, 40f, ready ? Color.white : Mute, TextAlignmentOptions.TopLeft, true, 26f, 42f);
+                    tmp.transform.SetAsLastSibling();
                 }
+
+                // рамка поверх всего
+                var frame = KImg(card, "KoksFrame", Spr("card"), new Color(1f, 1f, 1f, ready ? 0.3f : 0.12f), 0, 0, CW, CH, Image.Type.Sliced);
+                frame.transform.SetAsLastSibling();
             }
 
             DisableRaycasts(panel);
+        }
+
+        /// <summary>Дочерний Image, привязка к левому верхнему углу родителя.</summary>
+        static Image KImg(Transform parent, string name, Sprite sprite, Color color,
+                          float x, float y, float w, float h, Image.Type type)
+        {
+            var im = NewImage(name, parent, sprite, color, type);
+            var r = (RectTransform)im.transform;
+            r.anchorMin = r.anchorMax = new Vector2(0f, 1f);
+            r.pivot = new Vector2(0f, 1f);
+            r.anchoredPosition = new Vector2(x, -y);
+            r.sizeDelta = new Vector2(w, h);
+            return im;
+        }
+
+        static TextMeshProUGUI KTxt(Transform parent, string name, string text, TMP_FontAsset font, float size,
+                                    Color color, TextAlignmentOptions align, float x, float y, float w, float h)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            go.transform.SetParent(parent, false);
+            var r = (RectTransform)go.transform;
+            r.anchorMin = r.anchorMax = new Vector2(0f, 1f);
+            r.pivot = new Vector2(0f, 1f);
+            r.anchoredPosition = new Vector2(x, -y);
+            r.sizeDelta = new Vector2(w, h);
+            var t = go.GetComponent<TextMeshProUGUI>();
+            t.text = text;
+            Style(t, font, size, color, align, false, 0f, 0f);
+            t.raycastTarget = false;
+            return t;
         }
 
         // ------------------------------------------------------- общее
