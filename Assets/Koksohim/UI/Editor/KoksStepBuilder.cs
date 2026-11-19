@@ -43,18 +43,39 @@ namespace KoksUI.Editor
                 return;
             }
 
-            var old = GameObject.Find("CanvasStep1");
-            while (old != null)
-            {
-                Object.DestroyImmediate(old);
-                old = GameObject.Find("CanvasStep1");
-            }
+            var win = CreateWindow("CanvasStep1", marker.transform.position + new Vector3(0f, 1.5f, 0f), heading, body, medium);
+            var root = win.gameObject;
 
-            var root = new GameObject("CanvasStep1", typeof(RectTransform));
+            // круг: скрипт-триггер, отключаем самоуничтожение при касании
+            var sm = marker.GetComponent<StepMarker>();
+            if (sm == null) sm = marker.AddComponent<StepMarker>();
+            sm.window = win;
+            var killer = marker.GetComponent<DestroyOnCollisionByTag>();
+            if (killer != null) Object.DestroyImmediate(killer);
+            var killer2 = marker.GetComponent<DestroyOnTriggerByTag>();
+            if (killer2 != null) Object.DestroyImmediate(killer2);
+
+            root.SetActive(false); // окно появится, когда игрок встанет в круг
+
+            EditorUtility.SetDirty(win);
+            EditorUtility.SetDirty(sm);
+            Selection.activeGameObject = root;
+            var scene = root.scene;
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[Koks UI] Окно шага собрано: CanvasStep1, круг: " + marker.name + ". Тексты — в Inspector, компонент Step Window.");
+        }
+
+        internal static StepWindow CreateWindow(string name, Vector3 pos, TMP_FontAsset heading, TMP_FontAsset body, TMP_FontAsset medium)
+        {
+            foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (t != null && t.parent == null && t.name == name) Object.DestroyImmediate(t.gameObject);
+
+            var root = new GameObject(name, typeof(RectTransform));
             var rt = (RectTransform)root.transform;
             rt.sizeDelta = new Vector2(W, H);
             rt.localScale = Vector3.one * 0.001f; // 700 px = 0,7 м
-            rt.position = marker.transform.position + new Vector3(0f, 1.5f, 0f);
+            rt.position = pos;
 
             var canvas = root.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
@@ -139,25 +160,7 @@ namespace KoksUI.Editor
             btnLabel.text = win.buttonText;
             for (int i = 0; i < labels.Length; i++)
                 labels[i].text = i < win.checks.Length ? win.checks[i] : "";
-
-            // круг: скрипт-триггер, отключаем самоуничтожение при касании
-            var sm = marker.GetComponent<StepMarker>();
-            if (sm == null) sm = marker.AddComponent<StepMarker>();
-            sm.window = win;
-            var killer = marker.GetComponent<DestroyOnCollisionByTag>();
-            if (killer != null) Object.DestroyImmediate(killer);
-            var killer2 = marker.GetComponent<DestroyOnTriggerByTag>();
-            if (killer2 != null) Object.DestroyImmediate(killer2);
-
-            root.SetActive(false); // окно появится, когда игрок встанет в круг
-
-            EditorUtility.SetDirty(win);
-            EditorUtility.SetDirty(sm);
-            Selection.activeGameObject = root;
-            var scene = root.scene;
-            EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene);
-            Debug.Log("[Koks UI] Окно шага собрано: CanvasStep1, круг: " + marker.name + ". Тексты — в Inspector, компонент Step Window.");
+            return win;
         }
     }
 }

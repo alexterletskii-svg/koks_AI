@@ -69,7 +69,7 @@ namespace KoksUI
             Apply();
         }
 
-        void Apply()
+        public void Apply()
         {
             if (stepLabel != null) stepLabel.text = stepText;
             if (titleLabel != null) titleLabel.text = title;

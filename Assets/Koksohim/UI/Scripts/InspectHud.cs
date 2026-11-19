@@ -21,6 +21,12 @@ namespace KoksUI
         [Tooltip("Осмотрены все точки")]
         public UnityEvent onAllInspected;
 
+        [Header("Когда осмотрены все точки")]
+        [Tooltip("Окно, которое покажется (например, «Клапаны осмотрены»)")]
+        public StepWindow completionWindow;
+        [Tooltip("Объекты, которые включатся (например, следующий синий круг)")]
+        public GameObject[] activateOnComplete;
+
         [Header("Точки (заполняется билдером)")]
         public System.Collections.Generic.List<InspectPoint> points = new System.Collections.Generic.List<InspectPoint>();
 
@@ -54,6 +60,8 @@ namespace KoksUI
         {
             return current == null || current == p;
         }
+
+        public bool AllDone { get { return allFired; } }
 
         public int Total { get { return points.Count; } }
         public int Done { get { return done; } }
@@ -101,7 +109,12 @@ namespace KoksUI
             if (!allFired && points.Count > 0 && done >= points.Count)
             {
                 allFired = true;
+                current = null;
+                HideAll();
                 onAllInspected.Invoke();
+                if (completionWindow != null) completionWindow.Show();
+                if (activateOnComplete != null)
+                    foreach (var g in activateOnComplete) if (g != null) g.SetActive(true);
             }
         }
 

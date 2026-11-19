@@ -157,7 +157,7 @@ namespace KoksUI
             if (debugLog) Debug.Log("[Inspect] осмотрено: " + name + " (" + group + ", " + title + ")");
             SetMarkerState();
             hud.NotifyInspected(this);
-            if (hovered) hud.ShowCard(this);
+            if (hovered && !hud.AllDone) hud.ShowCard(this);
         }
 
         void SetMarkerState()
