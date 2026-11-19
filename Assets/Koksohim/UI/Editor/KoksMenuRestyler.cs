@@ -229,19 +229,15 @@ namespace KoksUI.Editor
                 btn.targetGraphic = img;
                 btn.colors = cb;
 
-                // номер локации берём из вызова TeleportToLocN на кнопке
+                // иконка по помещению назначения: 1 — диспетчерская, 2 — лебёдки, 3 — тоннель клапанов
                 int loc = DestinationLocation(btn);
-                string tagText = loc > 0 ? "Локация " + loc : "Переход " + (i + 1);
-                string icon = fallbackIcons[i];
+                string icon = loc == 1 ? "icon_room_control"
+                            : loc == 2 ? "icon_room_winch"
+                            : loc == 3 ? "icon_room_valve" : fallbackIcons[i];
 
-                KImg(card, "KoksCover", null, Hex("161C21"), 0, 0, CW, 170, Image.Type.Simple);
-                KImg(card, "KoksStripes", Spr("stripes_tile"), Color.white, 0, 0, CW, 170, Image.Type.Tiled);
-                KImg(card, "KoksIcon", Spr(icon), Heat, (CW - 100f) / 2f, 35f, 100f, 100f, Image.Type.Simple);
-
-                var tag = KImg(card, "KoksTag", Spr("chip"), new Color(0.078f, 0.094f, 0.11f, 1f), 18, 18, 190, 42, Image.Type.Sliced);
-                KImg(tag.transform, "KoksDot", Spr("dot"), Heat, 14, 12, 18, 18, Image.Type.Simple);
-                KTxt(tag.transform, "KoksTagText", tagText, medium, 24f, Color.white,
-                     TextAlignmentOptions.MidlineLeft, 40, 0, 146, 42);
+                KImg(card, "KoksCover", null, Hex("161C21"), 0, 0, CW, 190, Image.Type.Simple);
+                KImg(card, "KoksStripes", Spr("stripes_tile"), Color.white, 0, 0, CW, 190, Image.Type.Tiled);
+                KImg(card, "KoksIcon", Spr(icon), Heat, (CW - 120f) / 2f, 35f, 120f, 120f, Image.Type.Simple);
 
                 var action = KImg(card, "KoksAction", Spr("btn_heat"), Heat, 28, 342, CW - 56f, 70, Image.Type.Sliced);
                 KTxt(action.transform, "KoksActionText", "Перейти", heading, 32f, Dark,
@@ -250,8 +246,8 @@ namespace KoksUI.Editor
                 var t = FirstOriginalText(card);
                 if (t != null)
                 {
-                    SetRect((RectTransform)t.transform, 0f, -35f, CW - 56f, 120f);
-                    Style(t, heading, 36f, Color.white, TextAlignmentOptions.TopLeft, true, 24f, 38f);
+                    SetRect((RectTransform)t.transform, 0f, -45f, CW - 56f, 110f);
+                    Style(t, heading, 38f, Color.white, TextAlignmentOptions.TopLeft, true, 24f, 38f);
                     t.transform.SetAsLastSibling();
                 }
 
