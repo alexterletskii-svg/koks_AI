@@ -52,6 +52,9 @@ namespace KoksUI
 
         void Awake()
         {
+            // то, что должно появиться после осмотра, скрыто до этого момента
+            if (activateOnComplete != null)
+                foreach (var g in activateOnComplete) if (g != null) g.SetActive(false);
             HideAll();
             Refresh();
         }
