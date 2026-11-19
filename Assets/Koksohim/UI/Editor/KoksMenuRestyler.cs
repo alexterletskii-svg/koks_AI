@@ -129,6 +129,24 @@ namespace KoksUI.Editor
             Debug.Log("[Koks UI] Перестилизовано меню перехода: " + n);
         }
 
+        /// <summary>Номер локации из persistent-вызова TeleportToLocN на кнопке (0, если не найден).</summary>
+        static int DestinationLocation(Button btn)
+        {
+            var so = new SerializedObject(btn);
+            var calls = so.FindProperty("m_OnClick.m_PersistentCalls.m_Calls");
+            if (calls == null) return 0;
+            for (int i = 0; i < calls.arraySize; i++)
+            {
+                string m = calls.GetArrayElementAtIndex(i).FindPropertyRelative("m_MethodName").stringValue;
+                if (m != null && m.StartsWith("TeleportToLoc"))
+                {
+                    int n;
+                    if (int.TryParse(m.Substring("TeleportToLoc".Length), out n)) return n;
+                }
+            }
+            return 0;
+        }
+
         static void RestyleExitPanel(Transform panel)
         {
             StylePanel(panel);
@@ -180,22 +198,23 @@ namespace KoksUI.Editor
                 AddHover(exit, Spr("btn_outline"), new Color(1f, 0.769f, 0f, 0.35f), new Color(1f, 0.769f, 0f, 1f), false);
             }
 
-            // кнопки переходов
+            // кнопки переходов — карточки с иконкой
             string[] names = { "ButtonTop", "ButtonBottom" };
-            float[] ys = { 85f, -95f };
+            string[] fallbackIcons = { "icon_box", "icon_flame" };
+            const float CW = 640f, CH = 440f;
             for (int i = 0; i < names.Length; i++)
             {
-                Transform row = panel.Find(names[i]);
-                if (row == null) continue;
-                var r = (RectTransform)row;
-                var img = row.GetComponent<Image>();
-                var btn = row.GetComponent<Button>();
+                Transform card = panel.Find(names[i]);
+                if (card == null) continue;
+                var r = (RectTransform)card;
+                var img = card.GetComponent<Image>();
+                var btn = card.GetComponent<Button>();
 
-                for (int k = row.childCount - 1; k >= 0; k--)
-                    if (row.GetChild(k).name.StartsWith("Koks"))
-                        Object.DestroyImmediate(row.GetChild(k).gameObject);
+                for (int k = card.childCount - 1; k >= 0; k--)
+                    if (card.GetChild(k).name.StartsWith("Koks"))
+                        Object.DestroyImmediate(card.GetChild(k).gameObject);
 
-                SetRect(r, 0f, ys[i], 1200f, 150f);
+                SetRect(r, i == 0 ? -330f : 330f, -60f, CW, CH);
                 img.sprite = Spr("chip");
                 img.type = Image.Type.Sliced;
                 img.color = Color.white;
@@ -210,23 +229,35 @@ namespace KoksUI.Editor
                 btn.targetGraphic = img;
                 btn.colors = cb;
 
-                AddAccent(r, Heat);
-                var num = EnsureText(row, "KoksNum", "0" + (i + 1), heading, 64f, Heat,
-                                     TextAlignmentOptions.Center, -520f, 0f, 140f, 100f);
-                num.raycastTarget = false;
-                var act = EnsureText(row, "KoksAction", "Перейти", heading, 34f, Heat,
-                                     TextAlignmentOptions.MidlineRight, 490f, 0f, 220f, 60f);
-                act.raycastTarget = false;
+                // номер локации берём из вызова TeleportToLocN на кнопке
+                int loc = DestinationLocation(btn);
+                string tagText = loc > 0 ? "Локация " + loc : "Переход " + (i + 1);
+                string icon = fallbackIcons[i];
 
-                var t = FirstOriginalText(row);
+                KImg(card, "KoksCover", null, Hex("161C21"), 0, 0, CW, 170, Image.Type.Simple);
+                KImg(card, "KoksStripes", Spr("stripes_tile"), Color.white, 0, 0, CW, 170, Image.Type.Tiled);
+                KImg(card, "KoksIcon", Spr(icon), Heat, (CW - 100f) / 2f, 35f, 100f, 100f, Image.Type.Simple);
+
+                var tag = KImg(card, "KoksTag", Spr("chip"), new Color(0.078f, 0.094f, 0.11f, 1f), 18, 18, 190, 42, Image.Type.Sliced);
+                KImg(tag.transform, "KoksDot", Spr("dot"), Heat, 14, 12, 18, 18, Image.Type.Simple);
+                KTxt(tag.transform, "KoksTagText", tagText, medium, 24f, Color.white,
+                     TextAlignmentOptions.MidlineLeft, 40, 0, 146, 42);
+
+                var action = KImg(card, "KoksAction", Spr("btn_heat"), Heat, 28, 342, CW - 56f, 70, Image.Type.Sliced);
+                KTxt(action.transform, "KoksActionText", "Перейти", heading, 32f, Dark,
+                     TextAlignmentOptions.Center, 0, 0, CW - 56f, 70);
+
+                var t = FirstOriginalText(card);
                 if (t != null)
                 {
-                    SetRect((RectTransform)t.transform, -30f, 0f, 840f, 130f);
-                    Style(t, heading, 38f, Color.white, TextAlignmentOptions.MidlineLeft, true, 26f, 40f);
+                    SetRect((RectTransform)t.transform, 0f, -35f, CW - 56f, 120f);
+                    Style(t, heading, 36f, Color.white, TextAlignmentOptions.TopLeft, true, 24f, 38f);
+                    t.transform.SetAsLastSibling();
                 }
-                AddHover(row, Spr("chip"), new Color(1f, 1f, 1f, 0.07f), Heat, true);
-                var fr = NewImage("KoksFrame", row, Spr("card"), line, Image.Type.Sliced);
-                Stretch((RectTransform)fr.transform);
+
+                AddHover(card, Spr("chip"), new Color(1f, 1f, 1f, 0.07f), Heat, true);
+                var fr = KImg(card, "KoksFrame", Spr("card"), line, 0, 0, CW, CH, Image.Type.Sliced);
+                fr.transform.SetAsLastSibling();
             }
 
             DisableRaycasts(panel);
