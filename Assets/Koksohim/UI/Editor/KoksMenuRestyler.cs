@@ -1,6 +1,5 @@
 using TMPro;
 using UnityEditor;
-using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
@@ -192,8 +191,8 @@ namespace KoksUI.Editor
             backBtn.colors = bcb;
             KTxt(back.transform, "KoksBackText", "Назад", heading, 34f, Color.white,
                  TextAlignmentOptions.Center, 0, 0, 260, 84);
-            UnityEventTools.AddBoolPersistentCall(backBtn.onClick, panel.gameObject.SetActive, false);
-            UnityEventTools.AddBoolPersistentCall(backBtn.onClick, tutorial.gameObject.SetActive, true);
+            AddSetActive(backBtn, panel.gameObject, false);
+            AddSetActive(backBtn, tutorial.gameObject, true);
 
             string[] names = { "ButtonTop", "ButtonTop (1)", "ButtonTop (2)" };
             string[] icons = { "icon_search", "icon_flame", "icon_box" };
@@ -268,6 +267,23 @@ namespace KoksUI.Editor
             }
 
             DisableRaycasts(panel);
+        }
+
+        /// <summary>Добавляет в onClick кнопки вызов GameObject.SetActive(value) на target.</summary>
+        static void AddSetActive(Button btn, GameObject target, bool value)
+        {
+            var so = new SerializedObject(btn);
+            var calls = so.FindProperty("m_OnClick.m_PersistentCalls.m_Calls");
+            int i = calls.arraySize;
+            calls.arraySize = i + 1;
+            var c = calls.GetArrayElementAtIndex(i);
+            c.FindPropertyRelative("m_Target").objectReferenceValue = target;
+            c.FindPropertyRelative("m_TargetAssemblyTypeName").stringValue = "UnityEngine.GameObject, UnityEngine";
+            c.FindPropertyRelative("m_MethodName").stringValue = "SetActive";
+            c.FindPropertyRelative("m_Mode").intValue = 6; // Bool
+            c.FindPropertyRelative("m_Arguments.m_BoolArgument").boolValue = value;
+            c.FindPropertyRelative("m_CallState").intValue = 2; // RuntimeOnly
+            so.ApplyModifiedProperties();
         }
 
         /// <summary>Дочерний Image, привязка к левому верхнему углу родителя.</summary>
