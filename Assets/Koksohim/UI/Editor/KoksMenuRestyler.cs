@@ -86,6 +86,152 @@ namespace KoksUI.Editor
             Debug.Log("[Koks UI] Окна меню перестилизованы.");
         }
 
+        [MenuItem("Koks/Build UI/5. Перестилизовать меню перехода (FirstScene)")]
+        public static void RestyleExitMenus()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogError("[Koks UI] Остановите Play и запустите ещё раз.");
+                return;
+            }
+
+            KoksUIBuilder.PrepareAssets();
+            heading = Font("RobotoCondensed-ExtraBold");
+            body = Font("Inter-Regular");
+            medium = Font("Inter-Medium");
+            if (heading == null || body == null || medium == null)
+            {
+                Debug.LogError("[Koks UI] Нет шрифтов TMP. Запустите пункт 1.");
+                return;
+            }
+
+            int n = 0;
+            UnityEngine.SceneManagement.Scene scene = default;
+            foreach (var c in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (c.gameObject.name != "CanvasExit") continue;
+                Transform panel = c.transform.Find("Panel");
+                if (panel == null) continue;
+                c.transform.localScale = Vector3.one * 0.0006f; // чуть крупнее (было 0.0005)
+                RestyleExitPanel(panel);
+                scene = c.gameObject.scene;
+                n++;
+            }
+
+            if (n == 0)
+            {
+                Debug.LogError("[Koks UI] В открытой сцене нет CanvasExit. Откройте FirstScene.");
+                return;
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[Koks UI] Перестилизовано меню перехода: " + n);
+        }
+
+        static void RestyleExitPanel(Transform panel)
+        {
+            StylePanel(panel);
+            var line = new Color(1f, 1f, 1f, 0.16f);
+
+            // заголовок
+            var head = panel.Find("Image");
+            if (head != null)
+            {
+                var r = (RectTransform)head;
+                SetRect(r, -40f, 250f, 1120f, 110f);
+                Fill(head.GetComponent<Image>(), Card);
+                AddFrame(r, line);
+                AddAccent(r, Heat);
+                var t = FirstOriginalText(head);
+                if (t != null)
+                {
+                    SetRect((RectTransform)t.transform, 14f, 0f, 1070f, 100f);
+                    Style(t, heading, 40f, Color.white, TextAlignmentOptions.MidlineLeft, true, 26f, 42f);
+                }
+            }
+
+            // кнопка закрытия
+            var exit = panel.Find("ButtonExit");
+            if (exit != null)
+            {
+                var r = (RectTransform)exit;
+                SetRect(r, 640f, 305f, 80f, 80f);
+                var img = exit.GetComponent<Image>();
+                var btn = exit.GetComponent<Button>();
+                img.sprite = Spr("btn_outline");
+                img.type = Image.Type.Sliced;
+                img.color = Color.white;
+                var cb = ColorBlock.defaultColorBlock;
+                cb.normalColor = new Color(1f, 1f, 1f, 0.55f);
+                cb.highlightedColor = Color.white;
+                cb.selectedColor = new Color(1f, 1f, 1f, 0.55f);
+                cb.pressedColor = Hex("FFC400");
+                cb.fadeDuration = 0.08f;
+                btn.transition = Selectable.Transition.ColorTint;
+                btn.targetGraphic = img;
+                btn.colors = cb;
+                var t = FirstOriginalText(exit);
+                if (t != null)
+                {
+                    Stretch((RectTransform)t.transform);
+                    Style(t, heading, 40f, Color.white, TextAlignmentOptions.Center, false, 0f, 0f);
+                }
+                AddHover(exit, Spr("btn_outline"), new Color(1f, 0.769f, 0f, 0.35f), new Color(1f, 0.769f, 0f, 1f), false);
+            }
+
+            // кнопки переходов
+            string[] names = { "ButtonTop", "ButtonBottom" };
+            float[] ys = { 85f, -95f };
+            for (int i = 0; i < names.Length; i++)
+            {
+                Transform row = panel.Find(names[i]);
+                if (row == null) continue;
+                var r = (RectTransform)row;
+                var img = row.GetComponent<Image>();
+                var btn = row.GetComponent<Button>();
+
+                for (int k = row.childCount - 1; k >= 0; k--)
+                    if (row.GetChild(k).name.StartsWith("Koks"))
+                        Object.DestroyImmediate(row.GetChild(k).gameObject);
+
+                SetRect(r, 0f, ys[i], 1200f, 150f);
+                img.sprite = Spr("chip");
+                img.type = Image.Type.Sliced;
+                img.color = Color.white;
+
+                var cb = ColorBlock.defaultColorBlock;
+                cb.normalColor = Card;
+                cb.highlightedColor = Hex("2B343C");
+                cb.selectedColor = Card;
+                cb.pressedColor = Hex("3A3520");
+                cb.fadeDuration = 0.08f;
+                btn.transition = Selectable.Transition.ColorTint;
+                btn.targetGraphic = img;
+                btn.colors = cb;
+
+                AddAccent(r, Heat);
+                var num = EnsureText(row, "KoksNum", "0" + (i + 1), heading, 64f, Heat,
+                                     TextAlignmentOptions.Center, -520f, 0f, 140f, 100f);
+                num.raycastTarget = false;
+                var act = EnsureText(row, "KoksAction", "Перейти", heading, 34f, Heat,
+                                     TextAlignmentOptions.MidlineRight, 490f, 0f, 220f, 60f);
+                act.raycastTarget = false;
+
+                var t = FirstOriginalText(row);
+                if (t != null)
+                {
+                    SetRect((RectTransform)t.transform, -30f, 0f, 840f, 130f);
+                    Style(t, heading, 38f, Color.white, TextAlignmentOptions.MidlineLeft, true, 26f, 40f);
+                }
+                AddHover(row, Spr("chip"), new Color(1f, 1f, 1f, 0.07f), Heat, true);
+                var fr = NewImage("KoksFrame", row, Spr("card"), line, Image.Type.Sliced);
+                Stretch((RectTransform)fr.transform);
+            }
+
+            DisableRaycasts(panel);
+        }
+
         // ------------------------------------------------------ Обучение
 
         static void RestyleTutorial(Transform panel)
