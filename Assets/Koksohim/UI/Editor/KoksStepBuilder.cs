@@ -145,9 +145,9 @@ namespace KoksUI.Editor
             if (sm == null) sm = marker.AddComponent<StepMarker>();
             sm.window = win;
             var killer = marker.GetComponent<DestroyOnCollisionByTag>();
-            if (killer != null) killer.enabled = false;
+            if (killer != null) Object.DestroyImmediate(killer);
             var killer2 = marker.GetComponent<DestroyOnTriggerByTag>();
-            if (killer2 != null) killer2.enabled = false;
+            if (killer2 != null) Object.DestroyImmediate(killer2);
 
             root.SetActive(false); // окно появится, когда игрок встанет в круг
 

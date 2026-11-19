@@ -35,7 +35,7 @@ namespace KoksUI
             {
                 if (mb == null) continue;
                 string n = mb.GetType().Name;
-                if (n == "DestroyOnTriggerByTag" || n == "DestroyOnCollisionByTag") mb.enabled = false;
+                if (n == "DestroyOnTriggerByTag" || n == "DestroyOnCollisionByTag") Destroy(mb); // выключения мало: OnTrigger вызывается и у выключенных
             }
         }
 
