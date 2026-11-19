@@ -15,7 +15,7 @@ namespace KoksUI.Editor
                 return;
             }
 
-            var rays = Object.FindObjectsByType<XRRayInteractor>(FindObjectsSortMode.None);
+            var rays = Object.FindObjectsByType<XRRayInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             int count = 0;
             foreach (var r in rays)
             {
@@ -25,7 +25,7 @@ namespace KoksUI.Editor
                     count++;
                 }
             }
-            Debug.Log("[Koks UI] Отладка подключена к лучам: " + count + " (всего лучей в сцене: " + rays.Length + ")");
+            Debug.Log("[Koks UI] Отладка подключена к лучам: " + count + " (всего лучей в сцене, включая выключенные: " + rays.Length + ")");
         }
     }
 }
