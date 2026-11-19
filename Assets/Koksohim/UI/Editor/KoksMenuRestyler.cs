@@ -591,14 +591,22 @@ namespace KoksUI.Editor
                 {
                     foreach (Transform item in content)
                     {
-                        Fill(item.GetComponent<Image>(), Hex("252D34"));
+                        var itemImg = item.GetComponent<Image>();
+                        Fill(itemImg, Hex("252D34"));
+                        itemImg.raycastTarget = true; // плитка должна ловить луч целиком
                         AddFrame((RectTransform)item, line);
                         var t = FirstOriginalText(item);
                         if (t != null)
                             Style(t, medium, 24f, Ink, TextAlignmentOptions.MidlineLeft, true, 16f, 26f);
                         AddHover(item, Spr("chip"), new Color(1f, 1f, 1f, 0.07f), new Color(1f, 1f, 1f, 0.5f), true);
                         var tg = item.GetComponentInChildren<Toggle>(true);
-                        if (tg != null) AddSelected(item, tg);
+                        if (tg != null)
+                        {
+                            AddSelected(item, tg);
+                            var proxy = item.GetComponent<UIToggleProxy>();
+                            if (proxy == null) proxy = item.gameObject.AddComponent<UIToggleProxy>();
+                            proxy.toggle = tg;
+                        }
                     }
                 }
 
