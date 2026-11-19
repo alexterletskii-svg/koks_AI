@@ -12,10 +12,10 @@ namespace KoksUI
     public class InspectHud : MonoBehaviour
     {
         [Header("Размещение окна")]
-        [Tooltip("На сколько метров окно сдвигается от маркера к игроку")]
-        public float towardPlayer = 0.3f;
-        [Tooltip("Подъём окна над маркером, м")]
-        public float lift = 0.2f;
+        [Tooltip("Расстояние от головы игрока до окна, м")]
+        public float distance = 1.1f;
+        [Tooltip("Смещение окна по высоте от уровня глаз, м (минус — ниже)")]
+        public float heightOffset = -0.1f;
 
         [Header("События")]
         [Tooltip("Осмотрены все точки")]
@@ -121,17 +121,15 @@ namespace KoksUI
 
         void Place(InspectPoint p)
         {
+            // окно ставится перед игроком по направлению взгляда, поэтому оно всегда в поле зрения
             Camera cam = Camera.main;
-            Vector3 pos = p.MarkerPosition;
-            if (cam == null) { transform.position = pos; return; }
-            Vector3 toCam = cam.transform.position - pos;
-            toCam.y = 0f;
-            if (toCam.sqrMagnitude > 0.0001f) toCam.Normalize();
-            transform.position = pos + toCam * towardPlayer + Vector3.up * lift;
-            Vector3 look = transform.position - cam.transform.position;
-            look.y = 0f;
-            if (look.sqrMagnitude > 0.0001f)
-                transform.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
+            if (cam == null) { transform.position = p.MarkerPosition; return; }
+            Vector3 fwd = cam.transform.forward;
+            fwd.y = 0f;
+            if (fwd.sqrMagnitude < 0.0001f) fwd = Vector3.forward;
+            fwd.Normalize();
+            transform.position = cam.transform.position + fwd * distance + Vector3.up * heightOffset;
+            transform.rotation = Quaternion.LookRotation(fwd, Vector3.up);
         }
     }
 }

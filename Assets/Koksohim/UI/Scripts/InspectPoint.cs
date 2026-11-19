@@ -21,8 +21,12 @@ namespace KoksUI
         [Header("Осмотр")]
         [Tooltip("Сколько секунд держать луч на точке")]
         public float fillSeconds = 2f;
-        [Tooltip("Высота маркера над объектом, м")]
-        public float markerHeight = 0.18f;
+        [Tooltip("Размер маркера, м")]
+        public float markerSize = 0.1f;
+        [Tooltip("Насколько маркер выше центра объекта, м")]
+        public float markerLift = 0.1f;
+        [Tooltip("Для длинных объектов (тяги, стержни) маркер не выше этого от центра, м")]
+        public float maxAnchorHeight = 0.12f;
 
         [Tooltip("Писать в Console наведение/осмотр (для отладки)")]
         public bool debugLog = true;
@@ -63,26 +67,43 @@ namespace KoksUI
         }
 
         Renderer[] rends;
+        static Material onTop;
 
         void Start()
         {
             rends = GetComponentsInChildren<Renderer>();
             UpdateMarkerPosition();
-            if (marker != null) markerBase = marker.localScale;
+            if (marker != null)
+            {
+                markerBase = Vector3.one * (markerSize / 120f);
+                marker.localScale = markerBase;
+                MakeMarkerVisibleThroughGeometry();
+            }
             SetMarkerState();
         }
 
         // объект может двигаться анимацией — маркер едет вместе с ним
         void UpdateMarkerPosition()
         {
-            if (rends == null || rends.Length == 0) { MarkerPosition = transform.position + Vector3.up * markerHeight; }
+            if (rends == null || rends.Length == 0) { MarkerPosition = transform.position + Vector3.up * markerLift; }
             else
             {
                 Bounds b = rends[0].bounds;
                 for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
-                MarkerPosition = b.center + Vector3.up * (b.extents.y + markerHeight);
+                MarkerPosition = b.center + Vector3.up * (Mathf.Min(b.extents.y, maxAnchorHeight) + markerLift);
             }
             if (marker != null) marker.position = MarkerPosition;
+        }
+
+        // маркер рисуется поверх геометрии: его не закрывают крышки и корпус
+        void MakeMarkerVisibleThroughGeometry()
+        {
+            if (onTop == null)
+            {
+                onTop = new Material(Shader.Find("UI/Default"));
+                onTop.SetInt("unity_GUIZTestMode", (int)UnityEngine.Rendering.CompareFunction.Always);
+            }
+            foreach (var g in marker.GetComponentsInChildren<Graphic>(true)) g.material = onTop;
         }
 
         void OnHoverEnter(HoverEnterEventArgs args)
