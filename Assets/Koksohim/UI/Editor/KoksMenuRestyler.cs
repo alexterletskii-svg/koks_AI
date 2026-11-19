@@ -72,6 +72,8 @@ namespace KoksUI.Editor
 
             RestyleTutorial(tutorial);
             RestyleSelect(select, tutorial);
+            Transform result = canvas.transform.Find("PanelResult");
+            if (result != null) RestyleResult(result);
             Transform siz = canvas.transform.Find("PanelSiz");
             if (siz != null) RestyleSiz(siz);
             else Debug.LogWarning("[Koks UI] Не найдена PanelSiz.");
@@ -194,6 +196,7 @@ namespace KoksUI.Editor
             backBtn.colors = bcb;
             KTxt(back.transform, "KoksBackText", "Назад", heading, 34f, Color.white,
                  TextAlignmentOptions.Center, 0, 0, 260, 84);
+            AddHover(back.transform, Spr("btn_outline"), new Color(1f, 0.769f, 0f, 0.35f), new Color(1f, 0.769f, 0f, 1f), false);
             AddSetActive(backBtn, panel.gameObject, false);
             AddSetActive(backBtn, tutorial.gameObject, true);
 
@@ -264,6 +267,9 @@ namespace KoksUI.Editor
                     tmp.transform.SetAsLastSibling();
                 }
 
+                // подсветка при наведении
+                AddHover(card, Spr("chip"), new Color(1f, 1f, 1f, 0.07f), Heat, true);
+
                 // рамка поверх всего
                 var frame = KImg(card, "KoksFrame", Spr("card"), new Color(1f, 1f, 1f, ready ? 0.3f : 0.12f), 0, 0, CW, CH, Image.Type.Sliced);
                 frame.transform.SetAsLastSibling();
@@ -272,18 +278,78 @@ namespace KoksUI.Editor
             DisableRaycasts(panel);
         }
 
+        /// <summary>Подсветка при наведении луча: скрытый объект KoksHover, UIHover включает его.</summary>
+        static void AddHover(Transform host, Sprite fillSprite, Color fill, Color frameColor, bool onTop)
+        {
+            Clean(host, "KoksHover");
+            var go = new GameObject("KoksHover", typeof(RectTransform));
+            go.transform.SetParent(host, false);
+            Stretch((RectTransform)go.transform);
+
+            var f = NewImage("KoksHoverFill", go.transform, fillSprite, fill, Image.Type.Sliced);
+            Stretch((RectTransform)f.transform);
+            if (frameColor.a > 0f)
+            {
+                var fr = NewImage("KoksHoverFrame", go.transform, Spr("frame4"), frameColor, Image.Type.Sliced);
+                Stretch((RectTransform)fr.transform);
+            }
+            go.SetActive(false);
+
+            var hv = host.GetComponent<UIHover>();
+            if (hv == null) hv = host.gameObject.AddComponent<UIHover>();
+            hv.target = go;
+
+            if (onTop) go.transform.SetAsLastSibling(); else go.transform.SetSiblingIndex(0);
+        }
+
+        /// <summary>Рамка «выбрано» у плитки СИЗ: включается переключателем Toggle.</summary>
+        static void AddSelected(Transform item, Toggle toggle)
+        {
+            Clean(item, "KoksSel");
+            var go = new GameObject("KoksSel", typeof(RectTransform));
+            go.transform.SetParent(item, false);
+            Stretch((RectTransform)go.transform);
+
+            var f = NewImage("KoksSelFill", go.transform, Spr("chip"), new Color(1f, 0.769f, 0f, 0.16f), Image.Type.Sliced);
+            Stretch((RectTransform)f.transform);
+            var fr = NewImage("KoksSelFrame", go.transform, Spr("frame4"), Heat, Image.Type.Sliced);
+            Stretch((RectTransform)fr.transform);
+
+            go.SetActive(toggle.isOn);
+            go.transform.SetSiblingIndex(0);
+            AddSetActive(toggle, go, false, true);
+        }
+
         /// <summary>Добавляет в onClick кнопки вызов GameObject.SetActive(value) на target.</summary>
         static void AddSetActive(Button btn, GameObject target, bool value)
         {
-            var so = new SerializedObject(btn);
-            var calls = so.FindProperty("m_OnClick.m_PersistentCalls.m_Calls");
+            AddSetActive(btn, target, value, false);
+        }
+
+        // dynamic = true: значение берётся из события (для Toggle.onValueChanged)
+        static void AddSetActive(Object owner, GameObject target, bool value, bool dynamic)
+        {
+            var so = new SerializedObject(owner);
+            string evName = dynamic ? "onValueChanged" : "m_OnClick";
+            var calls = so.FindProperty(evName + ".m_PersistentCalls.m_Calls");
+            if (calls == null) { Debug.LogError("[Koks UI] Не найдено событие " + evName); return; }
+
+            // убрать «осиротевшие» вызовы от прежних запусков
+            for (int k = calls.arraySize - 1; k >= 0; k--)
+            {
+                var e = calls.GetArrayElementAtIndex(k);
+                if (e.FindPropertyRelative("m_MethodName").stringValue == "SetActive" &&
+                    e.FindPropertyRelative("m_Target").objectReferenceValue == null)
+                    calls.DeleteArrayElementAtIndex(k);
+            }
+
             int i = calls.arraySize;
             calls.arraySize = i + 1;
             var c = calls.GetArrayElementAtIndex(i);
             c.FindPropertyRelative("m_Target").objectReferenceValue = target;
             c.FindPropertyRelative("m_TargetAssemblyTypeName").stringValue = "UnityEngine.GameObject, UnityEngine";
             c.FindPropertyRelative("m_MethodName").stringValue = "SetActive";
-            c.FindPropertyRelative("m_Mode").intValue = 6; // Bool
+            c.FindPropertyRelative("m_Mode").intValue = dynamic ? 0 : 6; // 0 = аргумент из события, 6 = Bool
             c.FindPropertyRelative("m_Arguments.m_BoolArgument").boolValue = value;
             c.FindPropertyRelative("m_CallState").intValue = 2; // RuntimeOnly
             so.ApplyModifiedProperties();
@@ -317,6 +383,26 @@ namespace KoksUI.Editor
             Style(t, font, size, color, align, false, 0f, 0f);
             t.raycastTarget = false;
             return t;
+        }
+
+        // --------------------------------------------------- Результат
+
+        static void RestyleResult(Transform panel)
+        {
+            var info = panel.Find("ImageInfo");
+            if (info == null) return;
+            var r = (RectTransform)info;
+            Fill(info.GetComponent<Image>(), Hex("14191E", 0.97f));
+            AddFrame(r, new Color(1f, 1f, 1f, 0.2f));
+            AddAccent(r, Heat);
+            // текст результата не трогаем: его цвет и смайлики задаёт DressingChecker
+
+            foreach (string n in new[] { "ButtonNext", "ButtonReturn" })
+            {
+                var b = info.Find(n);
+                if (b == null) continue;
+                StyleHeatButton(b.GetComponent<Button>(), b.GetComponent<Image>(), 30f);
+            }
         }
 
         // ------------------------------------------------------ Выбор СИЗ
@@ -364,6 +450,9 @@ namespace KoksUI.Editor
                         var t = FirstOriginalText(item);
                         if (t != null)
                             Style(t, medium, 24f, Ink, TextAlignmentOptions.MidlineLeft, true, 16f, 26f);
+                        AddHover(item, Spr("chip"), new Color(1f, 1f, 1f, 0.07f), new Color(1f, 1f, 1f, 0.5f), true);
+                        var tg = item.GetComponentInChildren<Toggle>(true);
+                        if (tg != null) AddSelected(item, tg);
                     }
                 }
 
@@ -453,6 +542,7 @@ namespace KoksUI.Editor
                 Stretch((RectTransform)tmp.transform);
                 Style(tmp, heading, size, Dark, TextAlignmentOptions.Center, false, 0f, 0f);
             }
+            AddHover(btn.transform, Spr("btn_heat"), new Color(1f, 1f, 1f, 0.35f), new Color(1f, 1f, 1f, 0f), false);
         }
 
         static void Fill(Image img, Color color)
