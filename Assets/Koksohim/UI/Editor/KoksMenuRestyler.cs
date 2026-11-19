@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEditor;
+using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
@@ -71,7 +72,10 @@ namespace KoksUI.Editor
             }
 
             RestyleTutorial(tutorial);
-            RestyleSelect(select);
+            RestyleSelect(select, tutorial);
+
+            // меню чуть крупнее: 1,8 м -> 2,16 м по ширине
+            canvas.transform.localScale = Vector3.one * 0.0012f;
 
             EditorSceneManager.MarkSceneDirty(canvas.gameObject.scene);
             EditorSceneManager.SaveScene(canvas.gameObject.scene);
@@ -161,7 +165,7 @@ namespace KoksUI.Editor
 
         // -------------------------------------------------- Выбор сценария
 
-        static void RestyleSelect(Transform panel)
+        static void RestyleSelect(Transform panel, Transform tutorial)
         {
             StylePanel(panel);
 
@@ -171,6 +175,25 @@ namespace KoksUI.Editor
             var hint = EnsureText(panel, "KoksHint", "Наведите луч на карточку и нажмите триггер", body, 26f, Mute,
                                   TextAlignmentOptions.Center, 0f, -440f, 1600f, 44f);
             hint.raycastTarget = false;
+
+            // кнопка «Назад» -> обратно на экран обучения
+            Clean(panel, "KoksBack");
+            var back = KImg(panel, "KoksBack", Spr("btn_outline"), Color.white, 1520f, 24f, 260f, 84f, Image.Type.Sliced);
+            ((RectTransform)back.transform).anchorMin = ((RectTransform)back.transform).anchorMax = new Vector2(0f, 1f);
+            back.raycastTarget = true;
+            var backBtn = back.gameObject.AddComponent<Button>();
+            backBtn.targetGraphic = back;
+            var bcb = ColorBlock.defaultColorBlock;
+            bcb.normalColor = new Color(1f, 1f, 1f, 0.55f);
+            bcb.highlightedColor = Color.white;
+            bcb.selectedColor = new Color(1f, 1f, 1f, 0.55f);
+            bcb.pressedColor = Hex("FFC400");
+            bcb.fadeDuration = 0.08f;
+            backBtn.colors = bcb;
+            KTxt(back.transform, "KoksBackText", "Назад", heading, 34f, Color.white,
+                 TextAlignmentOptions.Center, 0, 0, 260, 84);
+            UnityEventTools.AddBoolPersistentCall(backBtn.onClick, panel.gameObject.SetActive, false);
+            UnityEventTools.AddBoolPersistentCall(backBtn.onClick, tutorial.gameObject.SetActive, true);
 
             string[] names = { "ButtonTop", "ButtonTop (1)", "ButtonTop (2)" };
             string[] icons = { "icon_search", "icon_flame", "icon_box" };
