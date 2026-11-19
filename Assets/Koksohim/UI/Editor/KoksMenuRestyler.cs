@@ -226,7 +226,7 @@ namespace KoksUI.Editor
                 // подпись и «кнопка» (вся карточка — кнопка, это только вид)
                 KTxt(card, "KoksSub", subs[i], body, 26f, Mute, TextAlignmentOptions.MidlineLeft, 28, 430, 477, 40);
                 var action = KImg(card, "KoksAction", Spr(ready ? "btn_heat" : "btn_outline"),
-                                  ready ? Heat : new Color(1f, 1f, 1f, 0.25), 28, 528, 477, 84, Image.Type.Sliced);
+                                  ready ? Heat : new Color(1f, 1f, 1f, 0.25f), 28, 528, 477, 84, Image.Type.Sliced);
                 KTxt(action.transform, "KoksActionText", ready ? "Выбрать" : "Скоро", heading, 34f,
                      ready ? Dark : Mute, TextAlignmentOptions.Center, 0, 0, 477, 84);
 
