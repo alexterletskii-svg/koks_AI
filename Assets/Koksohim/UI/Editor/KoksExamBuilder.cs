@@ -70,18 +70,18 @@ namespace KoksUI.Editor
             KoksUIBuilder.Img("Hazard", ft, KoksUIBuilder.Spr("hazard"), Color.white, 0, 0, 260, 10, Image.Type.Simple);
             KoksUIBuilder.Img("PanelFrame", ft, KoksUIBuilder.Spr("panel_frame"), new Color(1f, 1f, 1f, 0.16f), 0, 0, FW, FH);
             KoksUIBuilder.Txt("Title", ft, "Выберите действие", heading, 40, Color.white, TextAlignmentOptions.MidlineLeft, 28, 28, 800, 56);
-            var cardCol = KoksUIBuilder.Hex("1B2127");
+            var cardColor = KoksUIBuilder.Hex("1B2127");
             var roomBtns = new Button[2];
             var roomTitles = new TMP_Text[2];
             var roomCards = new GameObject[2];
             for (int i = 0; i < 3; i++)
             {
                 float x = 28f + i * 336f;
-                var card = KoksUIBuilder.Img("Card" + (i + 1), ft, KoksUIBuilder.Spr("chip"), cardCol, x, 104f, 300f, 276f);
-                KoksUIBuilder.Img("Stripe", card.transform, KoksUIBuilder.Spr("hazard"), Color.white, 0, 0, 120, 8, Image.Type.Simple);
+                var cardImg = KoksUIBuilder.Img("Card" + (i + 1), ft, KoksUIBuilder.Spr("chip"), cardColor, x, 104f, 300f, 276f);
+                KoksUIBuilder.Img("Stripe", cardImg.transform, KoksUIBuilder.Spr("hazard"), Color.white, 0, 0, 120, 8, Image.Type.Simple);
                 bool fin = i == 2;
-                var title = KoksUIBuilder.Txt("Title", card.transform, fin ? "Завершить экзамен и посмотреть результат" : "Помещение", medium, 28, Color.white, TextAlignmentOptions.TopLeft, 18, 26, 264, 130);
-                var bi = KoksUIBuilder.Img(fin ? "FinishButton" : "RoomButton", card.transform, KoksUIBuilder.Spr(fin ? "btn_heat" : "btn_outline"), Color.white, 18, 180, 264, 74);
+                var title = KoksUIBuilder.Txt("Title", cardImg.transform, fin ? "Завершить экзамен и посмотреть результат" : "Помещение", medium, 28, Color.white, TextAlignmentOptions.TopLeft, 18, 26, 264, 130);
+                var bi = KoksUIBuilder.Img(fin ? "FinishButton" : "RoomButton", cardImg.transform, KoksUIBuilder.Spr(fin ? "btn_heat" : "btn_outline"), Color.white, 18, 180, 264, 74);
                 bi.raycastTarget = true;
                 var bb = bi.gameObject.AddComponent<Button>();
                 bb.targetGraphic = bi;
@@ -90,7 +90,7 @@ namespace KoksUI.Editor
                     : KoksUIBuilder.Tint(new Color(1f, 1f, 1f, 0.5f), Color.white, new Color(0.8f, 0.8f, 0.8f, 1f), new Color(1f, 1f, 1f, 0.2f));
                 KoksUIBuilder.Txt("Label", bi.transform, fin ? "Завершить" : "Перейти", heading, 30, fin ? KoksUIBuilder.Dark : Color.white, TextAlignmentOptions.Center, 0, 0, 264, 74);
                 if (fin) { finishBtnRef = bb; }
-                else { roomBtns[i] = bb; roomTitles[i] = title; roomCards[i] = card.gameObject; }
+                else { roomBtns[i] = bb; roomTitles[i] = title; roomCards[i] = cardImg.gameObject; }
             }
             var xImg = KoksUIBuilder.Img("CloseButton", ft, KoksUIBuilder.Spr("chip"), KoksUIBuilder.Hex("2A3138"), FW - 28f - 56f, 24f, 56f, 56f);
             xImg.raycastTarget = true;
