@@ -98,6 +98,18 @@ namespace KoksUI
             if (!closing) Close();
         }
 
+        // окно остаётся на месте, но поворачивается лицом к игроку, как остальные окна
+        void Update()
+        {
+            if (closing) return;
+            Camera cam = Camera.main;
+            if (cam == null) return;
+            Vector3 look = transform.position - cam.transform.position;
+            look.y = 0f;
+            if (look.sqrMagnitude > 0.0001f)
+                transform.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
+        }
+
         void Place()
         {
             Camera cam = Camera.main;
