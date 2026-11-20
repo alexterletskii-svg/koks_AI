@@ -124660,8 +124660,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: a01734a1bee8e564d9897f4dc78549e5, type: 3}
   tunnelTrigger: {fileID: 684007257}
   valvesPoint: {fileID: 1017316165}
-  tunnelVolume: 0.025
-  valvesVolume: 0.1
+  tunnelVolume: 0.006
+  valvesVolume: 0.03
   farDistance: 10
   nearDistance: 2.5
   rampSeconds: 2

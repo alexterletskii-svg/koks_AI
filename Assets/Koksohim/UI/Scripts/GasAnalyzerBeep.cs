@@ -14,8 +14,8 @@ namespace KoksUI
         public ArrivalTrigger tunnelTrigger;
         [Tooltip("Точка клапанов (круг PointPosition_Step2)")]
         public Transform valvesPoint;
-        [Range(0f, 1f)] public float tunnelVolume = 0.025f;
-        [Range(0f, 1f)] public float valvesVolume = 0.1f;
+        [Range(0f, 1f)] public float tunnelVolume = 0.006f;
+        [Range(0f, 1f)] public float valvesVolume = 0.03f;
         [Tooltip("Дальше этого расстояния до клапанов (м) — тихий писк")]
         public float farDistance = 10f;
         [Tooltip("Ближе этого расстояния (м) — максимально громкий")]
