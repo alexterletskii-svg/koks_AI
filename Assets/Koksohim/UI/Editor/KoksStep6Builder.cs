@@ -91,51 +91,6 @@ namespace KoksUI.Editor
             EditorUtility.SetDirty(bc);
         }
 
-        // забор и прочее между кругом и объектом не должны перехватывать луч: такие объекты переводятся на слой Ignore Raycast,
-        // а у XR-лучей этот слой исключается из маски. Столкновения с игроком от этого не меняются.
-        static void ClearRayPath(Vector3 from, Transform target)
-        {
-            var rr = target.GetComponentInChildren<Renderer>();
-            if (rr == null) return;
-            Vector3 to = rr.bounds.center;
-            Physics.SyncTransforms();
-            Vector3 dir = to - from;
-            var hits = Physics.RaycastAll(from, dir.normalized, dir.magnitude, ~0, QueryTriggerInteraction.Ignore);
-            int moved = 0;
-            foreach (var h in hits)
-            {
-                if (h.collider == null || h.collider.transform.IsChildOf(target) || target.IsChildOf(h.collider.transform)) continue;
-                string path = h.collider.name + (h.collider.transform.parent != null ? " (в " + h.collider.transform.parent.name + ")" : "");
-                bool fence = false;
-                for (var t = h.collider.transform; t != null; t = t.parent) if (t.name.ToLower().Contains("fenc")) { fence = true; break; }
-                Debug.Log("[Koks UI] Между кругом 9 и конденсатоотводчиком: " + path + (fence ? " — забор, луч сквозь него" : ""));
-                if (!fence) continue;
-                var root = h.collider.transform;
-                while (root.parent != null && !root.name.ToLower().Contains("fenc")) root = root.parent;
-                foreach (var tr in root.GetComponentsInChildren<Transform>(true)) { tr.gameObject.layer = 2; EditorUtility.SetDirty(tr.gameObject); }
-                moved++;
-            }
-            if (moved > 0) Debug.Log("[Koks UI] Забор переведён на слой Ignore Raycast.");
-            // весь забор (объекты Fenc) — на слой Ignore Raycast: луч проходит сквозь него, игрок упирается как раньше
-            int fences = 0;
-            foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                if (t != null && t.gameObject.scene.IsValid() && t.name.ToLower().Contains("fenc") && t.gameObject.layer != 2)
-                {
-                    foreach (var tr in t.GetComponentsInChildren<Transform>(true)) { tr.gameObject.layer = 2; EditorUtility.SetDirty(tr.gameObject); }
-                    fences++;
-                }
-            Debug.Log("[Koks UI] Объектов забора переведено на слой Ignore Raycast: " + fences);
-            // лучи игрока не должны этот слой учитывать
-            int n = 0;
-            foreach (var ri in Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            {
-                ri.raycastMask = ri.raycastMask & ~(1 << 2);
-                EditorUtility.SetDirty(ri);
-                n++;
-            }
-            Debug.Log("[Koks UI] Маска лучей обновлена у " + n + " интеракторов.");
-        }
-
         static ParticleSystem BuildWater(Transform cilWater)
         {
             var old = cilWater.Find("DrainWater");
@@ -207,7 +162,7 @@ namespace KoksUI.Editor
             var medium = KoksUIBuilder.LoadFont("Inter-Medium");
             if (heading == null || body == null || medium == null) { Debug.LogError("[Koks UI] Нет шрифтов TMP."); return; }
 
-            Clean("CanvasInspect3", "InspectMarkers3", "CanvasInspect4", "InspectMarkers4", "CanvasInspect5", "InspectMarkers5");
+            Clean("CanvasInspect3", "InspectMarkers3", "CanvasInspect4", "InspectMarkers4", "CanvasInspect5", "InspectMarkers5", "CanvasStep9Done");
 
             var circle8 = Circle("PointPosition_Step8", circle6.position + new Vector3(3f, 0f, 0f), circle6.rotation);
             var circle9 = Circle("PointPosition_Step9", circle6.position + new Vector3(6f, 0f, 0f), circle6.rotation);
@@ -294,53 +249,46 @@ namespace KoksUI.Editor
             dv.activateAfter = new[] { circle9 };
             EditorUtility.SetDirty(dv);
 
-            // ===== шаг 9: конденсатоотводчик, затем выход в меню =====
-            var coll = FindT("CondensateCollector");
-            if (coll == null) { Debug.LogError("[Koks UI] Не найден CondensateCollector."); return; }
-            var hud5 = KoksInspectBuilder.BuildSet(new[]
-            {
-                new KoksInspectBuilder.Def("CondensateCollector", "Конденсатоотводчик", "Уровень воды",
-                    "Визуально проверить уровень воды в конденсатоотводчике.")
-            }, circle9.transform.position, "CanvasInspect5", "InspectMarkers5", heading, body, medium);
-            if (hud5 == null) return;
-            foreach (var p in hud5.points)
-            {
-                p.markerSize = 0.2f;
-                p.markerPull = 0.8f;
-                p.markerAtCenter = true;
-                EnlargeHitArea(p.gameObject, 0.7f);
-                EditorUtility.SetDirty(p);
-            }
-            ClearRayPath(circle9.transform.position + Vector3.up * 1.6f, coll);
+            // ===== шаг 9: визуальный осмотр конденсатоотводчика по таймеру, затем итог и выход в меню =====
             var w9 = Win("CanvasStep9", circle9.transform.position, heading, body, medium,
                 "Шаг 9", "Конденсатоотводчик",
-                "Последний этап осмотра — конденсатоотводчик.",
-                "Что проверить", new[] { "Визуально проверьте уровень воды в конденсатоотводчике" },
-                "Приступить к осмотру", 0f);
+                "Визуально осмотрите конденсатоотводчик и проверьте уровень воды.",
+                "Что проверить", new[] { "Осмотрите конденсатоотводчик", "Проверьте уровень воды" },
+                "Осматриваю…", 3f);
+            var done9 = Win("CanvasStep9Done", circle9.transform.position, heading, body, medium,
+                "Шаг 9 выполнен", "Конденсатоотводчик осмотрен",
+                "Уровень воды в конденсатоотводчике проверен.",
+                "Результат", new[] { "Уровень воды в норме" }, "Понятно", 4f);
             var finish = Win("CanvasFinish", circle9.transform.position, heading, body, medium,
-                "Осмотр завершён", "Осмотр выполнен",
-                "Вы завершили осмотр. Сейчас вы вернётесь в главное меню.",
-                "Что дальше", new[] { "Возврат в главное меню" }, "В меню", 8f);
+                "Осмотр завершён", "Сценарий завершён",
+                "Учебный сценарий осмотра газового тоннеля завершён.",
+                "Что дальше", new[] { "Вы вернётесь в меню выбора сценариев" }, "В меню выбора сценариев", 12f);
             var m9 = circle9.GetComponent<StepMarker>();
             if (m9 == null) m9 = circle9.AddComponent<StepMarker>();
             m9.window = w9;
             EditorUtility.SetDirty(m9);
-            hud5.startWindow = w9;
-            hud5.completionWindow = finish;
+            var ch1 = w9.GetComponent<WindowChain>();
+            if (ch1 == null) ch1 = w9.gameObject.AddComponent<WindowChain>();
+            ch1.window = w9; ch1.next = done9;
+            EditorUtility.SetDirty(ch1);
+            var ch2 = done9.GetComponent<WindowChain>();
+            if (ch2 == null) ch2 = done9.gameObject.AddComponent<WindowChain>();
+            ch2.window = done9; ch2.next = finish;
+            EditorUtility.SetDirty(ch2);
             var sl = finish.GetComponent<SceneLoadOnConfirm>();
             if (sl == null) sl = finish.gameObject.AddComponent<SceneLoadOnConfirm>();
             sl.window = finish;
             sl.sceneName = "MenuScene";
             EditorUtility.SetDirty(sl);
 
-            foreach (var h in new[] { hud3, hud4, hud5 }) EditorUtility.SetDirty(h);
+            foreach (var h in new[] { hud3, hud4 }) EditorUtility.SetDirty(h);
 
             // ===== всё последующее скрыто при старте =====
             var flowTr = FindT("StepFlow", true);
             StepFlow flow = flowTr != null ? flowTr.GetComponent<StepFlow>() : new GameObject("StepFlow").AddComponent<StepFlow>();
             var hide = new List<GameObject>();
             if (flow.hideAtStart != null) hide.AddRange(flow.hideAtStart.Where(g => g != null));
-            foreach (var g in new[] { circle8, circle9, w6.gameObject, done6.gameObject, w8.gameObject, done8.gameObject, w9.gameObject, finish.gameObject })
+            foreach (var g in new[] { circle8, circle9, w6.gameObject, done6.gameObject, w8.gameObject, done8.gameObject, w9.gameObject, done9.gameObject, finish.gameObject })
                 if (!hide.Contains(g)) hide.Add(g);
             flow.hideAtStart = hide.ToArray();
             EditorUtility.SetDirty(flow);

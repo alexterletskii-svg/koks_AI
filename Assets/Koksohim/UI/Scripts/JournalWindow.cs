@@ -56,7 +56,16 @@ namespace KoksUI
         {
             canvas = GetComponent<Canvas>();
             UIDepth.AlwaysOnTop(gameObject);
-            if (actionButton != null) actionButton.onClick.AddListener(OnAction);
+            if (actionButton != null)
+            {
+                actionButton.onClick.AddListener(OnAction);
+                // кнопка ловит луч одной целой областью: дочерние картинки и текст луч не перехватывают, область чуть шире видимой
+                var target = actionButton.targetGraphic;
+                foreach (var g in actionButton.GetComponentsInChildren<Graphic>(true))
+                    if (g != target) g.raycastTarget = false;
+                var im = target as Image;
+                if (im != null) im.raycastPadding = new Vector4(-40f, -30f, -40f, -30f);
+            }
             Clear();
         }
 
@@ -100,9 +109,7 @@ namespace KoksUI
 
         void Update()
         {
-            if (!open) return;
-            Camera cam = Camera.main;
-            if (cam != null) Face(cam);
+            // окно стоит на месте, где открылось: если оно «плывёт» за головой, луч промахивается мимо кнопки
         }
 
         void Place()

@@ -236,12 +236,18 @@ namespace KoksUI
             // окно ставится перед игроком по направлению взгляда, поэтому оно всегда в поле зрения
             Camera cam = Camera.main;
             if (cam == null) { transform.position = p.MarkerPosition; return; }
+            // по направлению взгляда с учётом наклона головы (иначе при взгляде на потолок окно оказывается внизу за кадром);
+            // наклон ограничен, чтобы окно не уходило в потолок и пол
             Vector3 fwd = cam.transform.forward;
-            fwd.y = 0f;
-            if (fwd.sqrMagnitude < 0.0001f) fwd = Vector3.forward;
-            fwd.Normalize();
-            transform.position = cam.transform.position + fwd * distance + Vector3.up * heightOffset;
-            transform.rotation = Quaternion.LookRotation(fwd, Vector3.up);
+            float pitch = Mathf.Asin(Mathf.Clamp(fwd.y, -1f, 1f)) * Mathf.Rad2Deg;
+            Vector3 flat = fwd; flat.y = 0f;
+            if (flat.sqrMagnitude < 0.0001f) flat = Vector3.forward;
+            flat.Normalize();
+            float usePitch = Mathf.Clamp(pitch, -25f, 40f);
+            Vector3 dir = Quaternion.AngleAxis(-usePitch, Vector3.Cross(Vector3.up, flat)) * flat;
+            Vector3 pos = cam.transform.position + dir * distance + Vector3.up * heightOffset;
+            transform.position = pos;
+            transform.rotation = Quaternion.LookRotation(flat, Vector3.up);
         }
     }
 }

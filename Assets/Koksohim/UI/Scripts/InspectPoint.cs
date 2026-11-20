@@ -49,14 +49,8 @@ namespace KoksUI
         /// <summary>Последние 1–3 точки: маркер крупнее и бледно виден сквозь предметы.</summary>
         public void SetSeeThrough(bool on)
         {
-            if (marker == null || seeThrough == on) return;
+            // последние неосмотренные точки: маркер крупнее (сквозь предметы он больше не просвечивает)
             seeThrough = on;
-            // последние неосмотренные точки: маркер крупнее и виден сквозь предметы бледным «призраком» (чтобы понять, куда смотреть)
-            foreach (var g in marker.GetComponentsInChildren<Graphic>(true))
-                g.material = on ? UIDepth.MarkerOverlayMaterial : UIDepth.MarkerMaterial;
-            var cg = marker.GetComponent<CanvasGroup>();
-            if (cg == null) cg = marker.gameObject.AddComponent<CanvasGroup>();
-            cg.alpha = on ? 0.55f : 1f;
         }
         bool seeThrough;
 
