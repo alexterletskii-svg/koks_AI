@@ -15,7 +15,7 @@ namespace KoksUI.Editor
     /// </summary>
     public static class KoksStep6Builder
     {
-        static readonly string[] RollerCandidates = { "Roller1", "Roller1.002", "Roller1.006", "Roller2" };
+        static readonly string[] RollerCandidates = { "Roller1", "Roller1.002" };
 
         static Transform FindT(string name, bool rootOnly = false)
         {
@@ -180,7 +180,7 @@ namespace KoksUI.Editor
                 float d = (rr.bounds.ClosestPoint(circle6.position) - circle6.position).sqrMagnitude;
                 if (d < rd) { rd = d; rollerName = r; }
             }
-            if (rollerName == null) { Debug.LogError("[Koks UI] Не найдены ролики (Roller1, Roller1.002, Roller1.006, Roller2)."); return; }
+            if (rollerName == null) { Debug.LogError("[Koks UI] Не найдены ролики Roller1 и Roller1.002."); return; }
             var rollerDefs = new List<KoksInspectBuilder.Def>
             {
                 new KoksInspectBuilder.Def(rollerName, "Кантовочный механизм", "Опорный ролик",
@@ -204,7 +204,7 @@ namespace KoksUI.Editor
             w6.title = "Опорные ролики";
             w6.description = "Следующим этапом осмотра является осмотр состояния целостности блочков и опорных роликов кантовочного механизма. Осмотрите ролик, отмеченный ромбиком, остальные ролики и блочки осматриваются так же.";
             w6.checksHeader = "Что проверить";
-            w6.checks = new[] { "Целостность блочков кантовочного механизма", "Целостность опорных роликов кантовочного механизма" };
+            w6.checks = new[] { "Целостность блочков кантовочного механизма", "Целостность опорных роликов: осмотрите отмеченные ролики" };
             w6.buttonText = "Приступить к осмотру";
             w6.autoConfirmSeconds = 0f;
             w6.Apply();
