@@ -34,15 +34,15 @@ namespace KoksUI
             }
         }
 
-        /// <summary>Материал маркеров осмотра: поверх геометрии, но ниже окон по очереди отрисовки.</summary>
+        /// <summary>Материал маркеров осмотра: с проверкой глубины (не просвечивают сквозь геометрию).</summary>
         public static Material MarkerMaterial
         {
             get
             {
                 if (markerMat == null)
                 {
-                    markerMat = new Material(ImageMaterial);
-                    markerMat.renderQueue = 3500;
+                    // обычный материал интерфейса: проверяет глубину, поэтому геометрия сцены закрывает маркер
+                    markerMat = new Material(Canvas.GetDefaultCanvasMaterial());
                 }
                 return markerMat;
             }

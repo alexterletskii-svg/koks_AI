@@ -153,12 +153,27 @@ namespace KoksUI
                     float w = page > 0 ? full - back - gap : full;
                     cr.sizeDelta = new Vector2(w, cr.sizeDelta.y);
                     cr.anchoredPosition = new Vector2(page > 0 ? 28f + back + gap : 28f, cr.anchoredPosition.y);
+                    // надпись и подсветка кнопки растягиваются вместе с ней (иначе торчат за край окна)
+                    foreach (Transform ch in cr)
+                    {
+                        var r = ch as RectTransform;
+                        if (r == null) continue;
+                        r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one;
+                        r.offsetMin = Vector2.zero; r.offsetMax = Vector2.zero;
+                    }
                 }
             }
 
             if (checkLabels == null) return;
             for (int i = 0; i < checkLabels.Length; i++)
             {
+                // длинный пункт сам уменьшается и не налезает на соседний
+                if (checkLabels[i] != null && !checkLabels[i].enableAutoSizing)
+                {
+                    checkLabels[i].fontSizeMax = checkLabels[i].fontSize;
+                    checkLabels[i].fontSizeMin = 16f;
+                    checkLabels[i].enableAutoSizing = true;
+                }
                 int idx = page * checkLabels.Length + i;
                 string t = (checks != null && idx < checks.Length) ? checks[idx] : "";
                 bool on = !string.IsNullOrEmpty(t);
@@ -175,6 +190,7 @@ namespace KoksUI
         void OnConfirmClicked()
         {
             if (page < Pages() - 1) { page++; Apply(); return; }
+            Debug.Log("[Window] нажато «" + buttonText + "»: " + name);
             Confirm();
         }
 
@@ -198,6 +214,7 @@ namespace KoksUI
             if (canvas == null) canvas = GetComponent<Canvas>();
             // камера нужна до включения: иначе XR-рейкастер регистрирует канвас без неё и сыплет KeyNotFoundException
             if (canvas != null && canvas.worldCamera == null) canvas.worldCamera = Camera.main;
+            Debug.Log("[Window] показано: " + name);
             if (!gameObject.activeSelf) gameObject.SetActive(true);
             if (canvas != null) canvas.enabled = true;
             Wire();
@@ -255,16 +272,18 @@ namespace KoksUI
 
         void FaceCamera(Camera cam)
         {
+            // окно смотрит на голову игрока (с учётом высоты), без крена: плоскость не «заваливается» и перспектива не искажает текст
             Vector3 look = transform.position - cam.transform.position;
-            look.y = 0f;
             if (look.sqrMagnitude > 0.0001f)
                 transform.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
         }
 
         public void Confirm()
         {
-            onConfirmed.Invoke();
+            // сначала закрываем окно, потом выполняем действия: ошибка в чужом обработчике не должна оставлять окно на экране
             Hide();
+            try { onConfirmed.Invoke(); }
+            catch (System.Exception e) { Debug.LogException(e, this); }
         }
 
         public void Hide()

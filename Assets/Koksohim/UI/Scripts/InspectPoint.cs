@@ -28,6 +28,9 @@ namespace KoksUI
         [Tooltip("Ручной сдвиг маркера в мировых координатах, м (если нужно подвинуть)")]
         public Vector3 markerOffset = Vector3.zero;
 
+        [Tooltip("Насколько маркер выдвинут к игроку, м. Больше — реже закрывается своей деталью, но и сквозь соседние предметы виден чуть чаще")]
+        public float markerPull = 0.25f;
+
         [Tooltip("Писать в Console наведение/осмотр (для отладки)")]
         public bool debugLog = true;
 
@@ -94,10 +97,21 @@ namespace KoksUI
                 // строго над деталью: по центру и над самой верхней точкой
                 MarkerPosition = new Vector3(b.center.x, b.max.y, b.center.z) + Vector3.up * markerGap + markerOffset;
             }
-            if (marker != null) marker.position = MarkerPosition;
+            if (marker != null)
+            {
+                // маркер чуть ближе к игроку, чем деталь: свой корпус его не закрывает, а стены и трубы между ними — закрывают
+                Vector3 pos = MarkerPosition;
+                Camera cam = Camera.main;
+                if (cam != null)
+                {
+                    Vector3 to = cam.transform.position - pos;
+                    if (to.sqrMagnitude > 0.01f) pos += to.normalized * Mathf.Min(markerPull, to.magnitude * 0.5f);
+                }
+                marker.position = pos;
+            }
         }
 
-        // маркер рисуется поверх геометрии: его не закрывают крышки и корпус
+        // маркер рисуется с проверкой глубины: стены, трубы и корпуса других узлов его закрывают
         void MakeMarkerVisibleThroughGeometry()
         {
             foreach (var g in marker.GetComponentsInChildren<Graphic>(true))
@@ -110,6 +124,7 @@ namespace KoksUI
         void OnHoverEnter(HoverEnterEventArgs args)
         {
             if (hud != null && !hud.Active) return;   // осмотр ещё не начат
+            if (hud != null && hud.AllDone && InspectHud.OtherRunning(hud)) return; // идёт осмотр другого шага — карточки старых не нужны
             hovered = true;
             if (debugLog) Debug.Log("[Inspect] наведение: " + name + " (" + group + ", " + title + ")");
             if (hud == null) return;
@@ -126,6 +141,12 @@ namespace KoksUI
 
         void Update()
         {
+            // страховка: если луч давно ушёл, а событие выхода не пришло — карточка не должна висеть
+            if (hovered && interactable != null && !interactable.isHovered)
+            {
+                hovered = false;
+                if (hud != null && Inspected) hud.Hide(this);
+            }
             if (hud == null || Inspected || !hud.Active) return;
             float fill = Mathf.Max(0.1f, fillSeconds);
             if (hovered)

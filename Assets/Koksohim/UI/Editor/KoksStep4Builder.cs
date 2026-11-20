@@ -20,7 +20,7 @@ namespace KoksUI.Editor
             "Положение пробок стопорных кранов",
             "Соединения рычагов кантовочных кранов со штангой кантовочной лебёдки",
             "Положение крышек устройства обезграфичивания",
-            "Внешняя поверхность распределительных газопроводов. Результат записать в эксплуатационный журнал",
+            "Внешняя поверхность газопроводов. Результат записать в журнал",
             "Состояние штанг кантовочного механизма",
             "Состояние канатов и жимков канатов кантовочного механизма"
         };
@@ -150,6 +150,44 @@ namespace KoksUI.Editor
             m5.window = w5;
             EditorUtility.SetDirty(m5);
 
+            // ---- шаг 6: круг и окно-заглушка (после «Приступить к осмотру» в окне шага 5)
+            var circle6Tr = FindT("PointPosition_Step6");
+            GameObject circle6;
+            if (circle6Tr != null) circle6 = circle6Tr.gameObject;
+            else
+            {
+                var prefab6 = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Koksohim/Prefabs/PointPosition.prefab");
+                if (prefab6 == null) { Debug.LogError("[Koks UI] Нет префаба PointPosition."); return; }
+                circle6 = (GameObject)PrefabUtility.InstantiatePrefab(prefab6);
+                circle6.name = "PointPosition_Step6";
+                circle6.transform.position = circle5.transform.position + new Vector3(2f, 0f, 0f);
+                circle6.transform.rotation = circle5.transform.rotation;
+            }
+            var w6Tr = FindT("CanvasStep6", true);
+            StepWindow w6 = w6Tr != null ? w6Tr.GetComponent<StepWindow>() : null;
+            if (w6 == null)
+            {
+                w6 = KoksStepBuilder.CreateWindow("CanvasStep6", circle6.transform.position + new Vector3(0f, 1.5f, 0f), heading, body, medium);
+                w6.stepText = "Шаг 6";
+                w6.title = "Следующий этап";
+                w6.description = "Здесь будет описание следующего этапа осмотра и что в нём нужно проверить.";
+                w6.checksHeader = "Что проверить";
+                w6.buttonText = "Приступить к осмотру";
+                w6.Apply();
+                w6.gameObject.SetActive(false);
+                EditorUtility.SetDirty(w6);
+            }
+            var m6 = circle6.GetComponent<StepMarker>();
+            if (m6 == null) m6 = circle6.AddComponent<StepMarker>();
+            m6.window = w6;
+            EditorUtility.SetDirty(m6);
+            // круг шага 6 появляется, когда игрок нажал «Приступить» в окне шага 5
+            var act5 = new System.Collections.Generic.List<GameObject>();
+            if (m5.activateOnConfirm != null) act5.AddRange(m5.activateOnConfirm.Where(g => g != null));
+            if (!act5.Contains(circle6)) act5.Add(circle6);
+            m5.activateOnConfirm = act5.ToArray();
+            EditorUtility.SetDirty(m5);
+
             // ---- связи
             hud.startWindow = w4;                          // маркеры появятся после «Приступить к осмотру»
             hud.completionWindow = done;
@@ -167,16 +205,18 @@ namespace KoksUI.Editor
             StepFlow flow = flowTr != null ? flowTr.GetComponent<StepFlow>() : new GameObject("StepFlow").AddComponent<StepFlow>();
             var hide = new List<GameObject>();
             if (flow.hideAtStart != null) hide.AddRange(flow.hideAtStart.Where(g => g != null));
-            foreach (var g in new[] { circle5, journal.gameObject, done.gameObject, w5.gameObject, w4.gameObject })
+            foreach (var g in new[] { circle5, circle6, journal.gameObject, done.gameObject, w5.gameObject, w6.gameObject, w4.gameObject })
                 if (!hide.Contains(g)) hide.Add(g);
             flow.hideAtStart = hide.ToArray();
             EditorUtility.SetDirty(flow);
             circle5.SetActive(false);
+            circle6.SetActive(false);
 
             Selection.activeGameObject = circle5;
             var scene = hud.gameObject.scene;
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
+            Debug.Log("[Koks UI] Шаг 6: круг PointPosition_Step6 и окно CanvasStep6 (заглушка) созданы.");
             Debug.Log("[Koks UI] Шаг 4 собран: " + hud.points.Count + " точек осмотра. Круг шага 5: PointPosition_Step5 (" +
                       circle5.transform.position + ") — передвиньте, куда нужно (включите галочку, переставьте, снимите).");
         }

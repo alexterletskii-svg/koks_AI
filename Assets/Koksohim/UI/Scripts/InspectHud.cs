@@ -65,6 +65,17 @@ namespace KoksUI
             Refresh();
         }
 
+        static readonly System.Collections.Generic.List<InspectHud> all = new System.Collections.Generic.List<InspectHud>();
+        void OnEnable() { if (!all.Contains(this)) all.Add(this); }
+        void OnDisable() { all.Remove(this); }
+
+        /// <summary>Идёт осмотр другого шага (начат и не завершён).</summary>
+        public static bool OtherRunning(InspectHud me)
+        {
+            foreach (var h in all) if (h != null && h != me && h.Active && !h.AllDone) return true;
+            return false;
+        }
+
         public bool IsFree(InspectPoint p)
         {
             return current == null || current == p;
