@@ -80,10 +80,16 @@ namespace KoksUI.Editor
             var toggle = row.GetComponentsInChildren<Toggle>(true).First();
             toggle.gameObject.name = "ToggleGasAnalyzer";
             toggle.isOn = false;
-            var bg = toggle.targetGraphic as Image;
+            var bgTr = toggle.transform.Find("Background");
+            var bg = bgTr != null ? bgTr.GetComponent<Image>() : toggle.targetGraphic as Image;
             if (bg != null) { bg.sprite = iconSprite; bg.preserveAspect = true; EditorUtility.SetDirty(bg); }
-            var label = row.GetComponentsInChildren<Text>(true).FirstOrDefault();
-            if (label != null) { label.text = "Газоанализатор"; EditorUtility.SetDirty(label); }
+            var tmp = row.GetComponentsInChildren<TMPro.TMP_Text>(true).FirstOrDefault();
+            if (tmp != null) { tmp.text = "Газоанализатор"; EditorUtility.SetDirty(tmp); }
+            else
+            {
+                var label = row.GetComponentsInChildren<Text>(true).FirstOrDefault();
+                if (label != null) { label.text = "Газоанализатор"; EditorUtility.SetDirty(label); }
+            }
 
             // ---- слой на человечке: поверх остальных слоёв
             var layerGo = Object.Instantiate(srcLayer.gameObject, panel);
