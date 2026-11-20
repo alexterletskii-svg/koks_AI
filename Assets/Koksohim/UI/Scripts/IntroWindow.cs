@@ -84,6 +84,7 @@ namespace KoksUI
                 yield return null;
             }
             Place();
+            UISound.WindowOpened();
 
             yield return Fade(0f, 1f, 0.4f);
 

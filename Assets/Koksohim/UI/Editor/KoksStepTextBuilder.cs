@@ -92,6 +92,7 @@ namespace KoksUI.Editor
             if (hud.completionWindow != null)
             {
                 hud.completionWindow.description = "Вы осмотрели оба клапана: пластины, тарелки и узлы. Дальше — следующий пункт обхода.";
+                hud.completionWindow.autoConfirmSeconds = 6f;   // информационное окно: закрывается само
                 hud.completionWindow.Apply();
                 EditorUtility.SetDirty(hud.completionWindow);
             }
@@ -110,6 +111,7 @@ namespace KoksUI.Editor
             w2.checksHeader = "Что дальше";
             w2.checks = new[] { "Поднимитесь по лестнице", "Подойдите к синему кругу", "" };
             w2.buttonText = "Понятно";
+            w2.autoConfirmSeconds = 6f;   // информационное окно: закрывается само и включает круг шага 3
             w2.Apply();
             EditorUtility.SetDirty(w2);
 

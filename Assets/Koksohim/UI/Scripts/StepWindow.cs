@@ -57,7 +57,14 @@ namespace KoksUI
         bool wired;
         int page;
         bool open;
+        [Header("Звук и таймер")]
+        [Tooltip("Звук при появлении окна")]
+        public bool playSound = true;
+        [Tooltip("Окно закроется само через это число секунд (как после нажатия кнопки). 0 — только по кнопке. Для окон с «Приступить к осмотру» оставляйте 0.")]
+        public float autoConfirmSeconds = 0f;
+
         Coroutine fade;
+        Coroutine autoTimer;
         Canvas canvas;
 
         void Awake()
@@ -163,7 +170,17 @@ namespace KoksUI
             Place();
             if (group != null) group.alpha = 0f;
             StartFade(0f, 1f, false);
+            if (playSound) UISound.WindowOpened();
+            if (autoTimer != null) StopCoroutine(autoTimer);
+            if (autoConfirmSeconds > 0f) autoTimer = StartCoroutine(AutoConfirm());
             onShown.Invoke();
+        }
+
+        IEnumerator AutoConfirm()
+        {
+            yield return new WaitForSecondsRealtime(autoConfirmSeconds);
+            autoTimer = null;
+            if (open) Confirm();
         }
 
         void Place()
@@ -181,7 +198,17 @@ namespace KoksUI
             fwd.y = 0f;
             if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.forward;
             fwd.Normalize();
-            transform.position = cam.transform.position + fwd * distance + Vector3.up * shiftUp;
+            // если перед игроком стена или оборудование — окно ставим ближе, чтобы оно не оказалось внутри геометрии
+            float dist = distance;
+            var hits = Physics.RaycastAll(cam.transform.position, fwd, distance + 0.3f, ~0, QueryTriggerInteraction.Ignore);
+            float nearest = float.MaxValue;
+            foreach (var h in hits)
+            {
+                if (h.distance < 0.35f || h.collider.transform.IsChildOf(cam.transform.root)) continue;
+                if (h.distance < nearest) nearest = h.distance;
+            }
+            if (nearest < float.MaxValue) dist = Mathf.Clamp(nearest - 0.15f, 0.8f, distance);
+            transform.position = cam.transform.position + fwd * dist + Vector3.up * shiftUp;
             FaceCamera(cam);
         }
 
@@ -202,6 +229,7 @@ namespace KoksUI
         public void Hide()
         {
             if (!open) return;
+            if (autoTimer != null) { StopCoroutine(autoTimer); autoTimer = null; }
             StartFade(group != null ? group.alpha : 1f, 0f, true);
         }
 
