@@ -106,8 +106,11 @@ namespace KoksUI
             if (g == "Кантовочные краны") return 2;
             if (g == "Обезграфичивание") return 3;
             if (g == "Газопроводы") return GasPipe;
-            if (g == "Кантовочный механизм") return t == "Опорный ролик" ? 7 : 6;
             if (g == "Сточные линии") return Drain;
+            if (g.StartsWith("Конденсат")) return Condensate;
+            // кантовочный механизм: штанги и канаты — одно задание, блочки (ролики) и опорные ролики — другое
+            if (g == "Кантовочный механизм" && (t.StartsWith("Штанг") || t.StartsWith("Канат"))) return 6;
+            if (g == "Кантовочный механизм" || g.StartsWith("Ролик")) return 7;
             return -1;
         }
 
@@ -210,9 +213,8 @@ namespace KoksUI
         void OnJournalWritten()
         {
             if (!started || finished) return;
-            // запись имеет смысл после осмотра газопроводов
-            if (done[GasPipe]) { done[Journal] = true; Debug.Log("[Exam] запись в журнал сделана"); }
-            else Debug.Log("[Exam] запись в журнал сделана до осмотра газопроводов: не засчитана");
+            done[Journal] = true;
+            Debug.Log("[Exam] запись в журнал сделана");
         }
 
         // ------------------------------------------------------------------ луч
@@ -239,9 +241,6 @@ namespace KoksUI
                 float along = Vector3.Dot(to, t.forward);
                 if (along < 0.2f || along > 12f) continue;
                 if (Vector3.Cross(t.forward, to).magnitude > rad + along * 0.03f) continue;
-                RaycastHit hit;
-                if (Physics.Linecast(t.position, b.center, out hit, ~0, QueryTriggerInteraction.Ignore)
-                    && hit.distance < along - Mathf.Max(0.6f, b.extents.magnitude)) continue;
                 return true;
             }
             return false;
@@ -288,16 +287,17 @@ namespace KoksUI
             if (journalIcon != null) journalIcon.SetVisible(started && !blocked);
             if (!started) return;
 
-            // ручка двери выхода открыла окно перехода — подменяем его окном завершения экзамена
+            // ручка двери открыла окно перехода — показываем своё: 2 перехода и «Завершить экзамен»
             foreach (var ec in exitCanvases)
             {
                 if (ec == null || !ec.activeSelf) continue;
+                var rooms = ExamFinishWindow.ReadRooms(ec);
                 ec.SetActive(false);
                 if (Time.unscaledTime < finishCooldown) continue;
                 if (finishWindow != null && !finishWindow.IsOpen)
                 {
-                    Debug.Log("[Exam] нажата ручка выхода: подтверждение завершения");
-                    finishWindow.Show(Finish, () => finishCooldown = Time.unscaledTime + 1.5f);
+                    Debug.Log("[Exam] ручка двери: окно выбора (переходов: " + rooms.Count + ")");
+                    finishWindow.Show(rooms, Finish, () => finishCooldown = Time.unscaledTime + 1.5f);
                 }
                 else if (finishWindow == null) { Finish(); return; }
             }

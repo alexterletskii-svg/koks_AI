@@ -62,29 +62,45 @@ namespace KoksUI.Editor
             jicon.button = jbtn;
             jicon.journal = journal;
 
-            // ---- окно «Завершить экзамен?»
-            const float FW = 640f, FH = 330f;
+            // ---- окно по ручке двери: 2 перехода + «Завершить экзамен»
+            const float FW = 1028f, FH = 408f;
             var fg = NewCanvas("CanvasExamFinish", FW, FH, 0.001f, true);
             var ft = fg.transform;
             KoksUIBuilder.Img("PanelFill", ft, KoksUIBuilder.Spr("panel_fill"), KoksUIBuilder.Hex("14191E", 0.96f), 0, 0, FW, FH);
             KoksUIBuilder.Img("Hazard", ft, KoksUIBuilder.Spr("hazard"), Color.white, 0, 0, 260, 10, Image.Type.Simple);
             KoksUIBuilder.Img("PanelFrame", ft, KoksUIBuilder.Spr("panel_frame"), new Color(1f, 1f, 1f, 0.16f), 0, 0, FW, FH);
-            KoksUIBuilder.Txt("Title", ft, "Завершить экзамен?", heading, 44, Color.white, TextAlignmentOptions.MidlineLeft, 28, 36, 584, 62);
-            KoksUIBuilder.Txt("Text", ft, "Результат осмотра будет подведён сразу. Вернуться к осмотру после завершения нельзя.", body, 26, KoksUIBuilder.Mute, TextAlignmentOptions.TopLeft, 28, 112, 584, 90);
-            var fbImg = KoksUIBuilder.Img("FinishButton", ft, KoksUIBuilder.Spr("btn_heat"), Color.white, 28, 226, 292, 76);
-            fbImg.raycastTarget = true;
-            var fbtn = fbImg.gameObject.AddComponent<Button>();
-            fbtn.targetGraphic = fbImg;
-            fbtn.colors = KoksUIBuilder.Tint(KoksUIBuilder.Heat, KoksUIBuilder.HeatHi, KoksUIBuilder.Hex("E0AB00"), KoksUIBuilder.Hex("6B6F73"));
-            KoksUIBuilder.Txt("Label", fbImg.transform, "Завершить", heading, 30, KoksUIBuilder.Dark, TextAlignmentOptions.Center, 0, 0, 292, 76);
-            var cbImg = KoksUIBuilder.Img("ContinueButton", ft, KoksUIBuilder.Spr("btn_outline"), Color.white, 340, 226, 272, 76);
-            cbImg.raycastTarget = true;
-            var cbtn = cbImg.gameObject.AddComponent<Button>();
-            cbtn.targetGraphic = cbImg;
-            cbtn.colors = KoksUIBuilder.Tint(new Color(1f, 1f, 1f, 0.5f), Color.white, new Color(0.8f, 0.8f, 0.8f, 1f), new Color(1f, 1f, 1f, 0.2f));
-            KoksUIBuilder.Txt("Label", cbImg.transform, "Продолжить", heading, 30, Color.white, TextAlignmentOptions.Center, 0, 0, 272, 76);
+            KoksUIBuilder.Txt("Title", ft, "Выберите действие", heading, 40, Color.white, TextAlignmentOptions.MidlineLeft, 28, 28, 800, 56);
+            var cardCol = KoksUIBuilder.Hex("1B2127");
+            var roomBtns = new Button[2];
+            var roomTitles = new TMP_Text[2];
+            var roomCards = new GameObject[2];
+            for (int i = 0; i < 3; i++)
+            {
+                float x = 28f + i * 336f;
+                var card = KoksUIBuilder.Img("Card" + (i + 1), ft, KoksUIBuilder.Spr("chip"), cardCol, x, 104f, 300f, 276f);
+                KoksUIBuilder.Img("Stripe", card.transform, KoksUIBuilder.Spr("hazard"), Color.white, 0, 0, 120, 8, Image.Type.Simple);
+                bool fin = i == 2;
+                var title = KoksUIBuilder.Txt("Title", card.transform, fin ? "Завершить экзамен и посмотреть результат" : "Помещение", medium, 28, Color.white, TextAlignmentOptions.TopLeft, 18, 26, 264, 130);
+                var bi = KoksUIBuilder.Img(fin ? "FinishButton" : "RoomButton", card.transform, KoksUIBuilder.Spr(fin ? "btn_heat" : "btn_outline"), Color.white, 18, 180, 264, 74);
+                bi.raycastTarget = true;
+                var bb = bi.gameObject.AddComponent<Button>();
+                bb.targetGraphic = bi;
+                bb.colors = fin
+                    ? KoksUIBuilder.Tint(KoksUIBuilder.Heat, KoksUIBuilder.HeatHi, KoksUIBuilder.Hex("E0AB00"), KoksUIBuilder.Hex("6B6F73"))
+                    : KoksUIBuilder.Tint(new Color(1f, 1f, 1f, 0.5f), Color.white, new Color(0.8f, 0.8f, 0.8f, 1f), new Color(1f, 1f, 1f, 0.2f));
+                KoksUIBuilder.Txt("Label", bi.transform, fin ? "Завершить" : "Перейти", heading, 30, fin ? KoksUIBuilder.Dark : Color.white, TextAlignmentOptions.Center, 0, 0, 264, 74);
+                if (fin) { finishBtnRef = bb; }
+                else { roomBtns[i] = bb; roomTitles[i] = title; roomCards[i] = card.gameObject; }
+            }
+            var xImg = KoksUIBuilder.Img("CloseButton", ft, KoksUIBuilder.Spr("chip"), KoksUIBuilder.Hex("2A3138"), FW - 28f - 56f, 24f, 56f, 56f);
+            xImg.raycastTarget = true;
+            var xBtn = xImg.gameObject.AddComponent<Button>();
+            xBtn.targetGraphic = xImg;
+            xBtn.colors = KoksUIBuilder.Tint(Color.white, new Color(1f, 0.93f, 0.6f, 1f), new Color(0.8f, 0.7f, 0.2f, 1f), Color.gray);
+            KoksUIBuilder.Txt("Label", xImg.transform, "X", heading, 30, Color.white, TextAlignmentOptions.Center, 0, 0, 56, 56);
             var fwin = fg.AddComponent<ExamFinishWindow>();
-            fwin.finishButton = fbtn; fwin.continueButton = cbtn;
+            fwin.roomButtons = roomBtns; fwin.roomTitles = roomTitles; fwin.roomCards = roomCards;
+            fwin.finishButton = finishBtnRef; fwin.closeButton = xBtn;
             fwin.group = fg.GetComponent<CanvasGroup>();
             fg.GetComponent<Canvas>().enabled = false;
 
@@ -153,6 +169,8 @@ namespace KoksUI.Editor
             EditorSceneManager.SaveScene(ctrlGo.scene);
             Debug.Log("[Koks UI] Экзамен собран: ExamController, CanvasExamRing, CanvasExamJournal, CanvasExamResult. Проверьте, что в сцене есть объект door.004.");
         }
+
+        static Button finishBtnRef;
 
         static GameObject NewCanvas(string name, float w, float h, float scale, bool raycaster)
         {
