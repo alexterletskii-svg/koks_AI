@@ -88,6 +88,14 @@ namespace KoksUI.Editor
                 EditorUtility.SetDirty(w);
             }
 
+            // окно «Клапаны осмотрены»: текст под шесть точек
+            if (hud.completionWindow != null)
+            {
+                hud.completionWindow.description = "Вы осмотрели оба клапана: пластины, тарелки и узлы. Дальше — следующий пункт обхода.";
+                hud.completionWindow.Apply();
+                EditorUtility.SetDirty(hud.completionWindow);
+            }
+
             // 3. окно у круга шага 2: подняться по лестнице
             var m2 = circle2.GetComponent<StepMarker>();
             if (m2 == null || m2.window == null)

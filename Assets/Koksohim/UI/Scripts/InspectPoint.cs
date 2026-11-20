@@ -105,6 +105,7 @@ namespace KoksUI
             {
                 onTop = new Material(Shader.Find("UI/Default"));
                 onTop.SetInt("unity_GUIZTestMode", (int)UnityEngine.Rendering.CompareFunction.Always);
+                onTop.renderQueue = UIDepth.MarkerQueue;
             }
             foreach (var g in marker.GetComponentsInChildren<Graphic>(true)) g.material = onTop;
         }
