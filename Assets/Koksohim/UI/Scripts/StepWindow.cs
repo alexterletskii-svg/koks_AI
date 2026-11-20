@@ -198,16 +198,7 @@ namespace KoksUI
             fwd.y = 0f;
             if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.forward;
             fwd.Normalize();
-            // если перед игроком стена или оборудование — окно ставим ближе, чтобы оно не оказалось внутри геометрии
             float dist = distance;
-            var hits = Physics.RaycastAll(cam.transform.position, fwd, distance + 0.3f, ~0, QueryTriggerInteraction.Ignore);
-            float nearest = float.MaxValue;
-            foreach (var h in hits)
-            {
-                if (h.distance < 0.35f || h.collider.transform.IsChildOf(cam.transform.root)) continue;
-                if (h.distance < nearest) nearest = h.distance;
-            }
-            if (nearest < float.MaxValue) dist = Mathf.Clamp(nearest - 0.15f, 0.8f, distance);
             transform.position = cam.transform.position + fwd * dist + Vector3.up * shiftUp;
             FaceCamera(cam);
         }

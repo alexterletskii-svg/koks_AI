@@ -67,7 +67,6 @@ namespace KoksUI
         }
 
         Renderer[] rends;
-        static Material onTop;
 
         void Start()
         {
@@ -101,13 +100,7 @@ namespace KoksUI
         // маркер рисуется поверх геометрии: его не закрывают крышки и корпус
         void MakeMarkerVisibleThroughGeometry()
         {
-            if (onTop == null)
-            {
-                onTop = new Material(Shader.Find("UI/Default"));
-                onTop.SetInt("unity_GUIZTestMode", (int)UnityEngine.Rendering.CompareFunction.Always);
-                onTop.renderQueue = UIDepth.MarkerQueue;
-            }
-            foreach (var g in marker.GetComponentsInChildren<Graphic>(true)) g.material = onTop;
+            foreach (var g in marker.GetComponentsInChildren<Graphic>(true)) g.material = UIDepth.ImageMaterial;
         }
 
         void OnHoverEnter(HoverEnterEventArgs args)
