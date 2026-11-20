@@ -415,7 +415,7 @@ namespace KoksUI
             foreach (var ec in exitCanvases)
             {
                 if (ec == null || !ec.activeSelf) continue;
-                var rooms = ExamFinishWindow.ReadRooms(exitCanvases);
+                var rooms = ExamFinishWindow.ReadRooms(new[] { ec });   // переходы именно из этого помещения
                 ec.SetActive(false);
                 if (Time.unscaledTime < finishCooldown) continue;
                 if (finishWindow != null && !finishWindow.IsOpen)

@@ -131,12 +131,17 @@ namespace KoksUI
             onFinish = finish; onClose = close;
 
             // карточки: диспетчерская и комната лебёдок (если названия не нашлись — первые найденные переходы)
+            // переходы берутся из окна того помещения, где стоит игрок (в тоннеле — диспетчерская и лебёдки, в диспетчерской — тоннель и лебёдки и т.д.)
             var chosen = new List<Room>();
-            var disp = Find(all, "диспетчер", null);
-            var winch = Find(all, "лебедок", "лебёдок");
-            if (disp != null) chosen.Add(disp);
-            if (winch != null) chosen.Add(winch);
+            if (all.Count > 2)
+            {
+                var disp = Find(all, "диспетчер", null);
+                var winch = Find(all, "лебедок", "лебёдок");
+                if (disp != null) chosen.Add(disp);
+                if (winch != null) chosen.Add(winch);
+            }
             foreach (var r in all) { if (chosen.Count >= 2) break; if (!chosen.Contains(r)) chosen.Add(r); }
+            Debug.Log("[Exam] переходы в окне: " + string.Join(" | ", chosen.ConvertAll(r => r.title)));
 
             for (int i = 0; roomButtons != null && i < roomButtons.Length; i++)
             {
