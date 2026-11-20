@@ -45,6 +45,9 @@ namespace KoksUI
         public TMP_Text actionLabel;
         public CanvasGroup group;
 
+        /// <summary>Запись в журнал сделана (экзамен считает по этому событию).</summary>
+        public event System.Action Written;
+
         Canvas canvas;
         bool open;
         bool busy;
@@ -181,6 +184,7 @@ namespace KoksUI
 
             written = true;
             busy = false;
+            if (Written != null) Written();
             if (actionLabel != null) actionLabel.text = doneText;
             if (actionButton != null) actionButton.interactable = true;
 

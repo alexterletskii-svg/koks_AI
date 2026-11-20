@@ -28,6 +28,12 @@ namespace KoksUI
         [Tooltip("Что включить после (следующий синий круг)")]
         public GameObject[] activateAfter;
 
+        [Header("Экзамен")]
+        [Tooltip("Экзамен: кран открывает/закрывает ExamController, окон и кругов нет")]
+        public bool examMode;
+        public bool Opened { get; private set; }   // кран открыт, вода идёт, можно закрывать
+        public bool Closed { get; private set; }   // кран закрыт игроком
+
         int phase;      // 0 — кран закрыт, ждём открытия; 1 — открыт, ждём закрытия; 2 — готово
         bool subscribed;
         Quaternion closedRot;
@@ -46,6 +52,9 @@ namespace KoksUI
             hud.PointInspected += OnInspected;
             subscribed = true;
         }
+
+        /// <summary>Экзамен: игрок осмотрел кран (первый раз — открыть, второй — закрыть).</summary>
+        public void ExamInspected(InspectPoint p) { OnInspected(p); }
 
         void OnInspected(InspectPoint p)
         {
@@ -80,6 +89,7 @@ namespace KoksUI
             if (water != null && !water.isPlaying) water.Play();
             Debug.Log("[DrainValve] кран открыт, вода идёт");
             yield return new WaitForSeconds(flowSeconds);
+            Opened = true;
 
             if (closeWindow != null)
             {
@@ -89,7 +99,7 @@ namespace KoksUI
                 while (closeWindow.IsOpen) yield return null;
             }
             // кран нужно закрыть самому: точка осмотра снова доступна
-            if (p != null) p.ResetForRepeat("Закрыть кран", "Кран закрыт, вода перекрыта.");
+            if (p != null && !examMode) p.ResetForRepeat("Закрыть кран", "Кран закрыт, вода перекрыта.");
         }
 
         IEnumerator Close()
@@ -97,6 +107,7 @@ namespace KoksUI
             yield return Spin(-spinDegrees, 0.6f);
             if (valve != null) valve.localRotation = closedRot;
             if (water != null) water.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            Closed = true;
             Debug.Log("[DrainValve] кран закрыт игроком, вода перекрыта");
             yield return new WaitForSeconds(1.2f);
             if (window != null)
