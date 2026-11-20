@@ -63,6 +63,7 @@ namespace KoksUI
         [Tooltip("Окно закроется само через это число секунд (как после нажатия кнопки). 0 — только по кнопке. Для окон с «Приступить к осмотру» оставляйте 0.")]
         public float autoConfirmSeconds = 0f;
 
+        bool buttonFitted;
         static int openCount;
         /// <summary>Сейчас на экране есть окно шага (маркеры осмотра в это время скрываются).</summary>
         public static bool AnyOpen { get { return openCount > 0; } }
@@ -86,6 +87,14 @@ namespace KoksUI
             confirmButton.onClick.AddListener(OnConfirmClicked);
             if (backButton != null) backButton.onClick.AddListener(OnBackClicked);
             wired = true;
+        }
+
+        // пока окно открыто, оно поворачивается лицом к игроку (чтобы текст не оказался зеркальным, если игрок обошёл окно)
+        void Update()
+        {
+            if (!open) return;
+            Camera cam = Camera.main;
+            if (cam != null) FaceCamera(cam);
         }
 
         void OnValidate()
@@ -112,7 +121,19 @@ namespace KoksUI
             int pages = Pages();
             page = Mathf.Clamp(page, 0, pages - 1);
             bool last = page >= pages - 1;
-            if (buttonLabel != null) buttonLabel.text = last ? buttonText : nextText;
+            if (buttonLabel != null)
+            {
+                if (!buttonFitted)
+                {
+                    // длинный текст кнопки («Приступить к осмотру») сам уменьшается, чтобы влезть
+                    buttonFitted = true;
+                    buttonLabel.enableAutoSizing = true;
+                    buttonLabel.fontSizeMax = buttonLabel.fontSize;
+                    buttonLabel.fontSizeMin = 16f;
+                    buttonLabel.textWrappingMode = TextWrappingModes.NoWrap;
+                }
+                buttonLabel.text = last ? buttonText : nextText;
+            }
             if (pageLabel != null) pageLabel.text = pages > 1 ? (page + 1) + " из " + pages : "";
             if (backButton != null)
             {

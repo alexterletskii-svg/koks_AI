@@ -158,6 +158,11 @@ namespace KoksUI.Editor
                 EditorUtility.SetDirty(w3);
             }
 
+            // у окна шага 3 последняя кнопка — «Понятно»: осмотр начнётся у круга шага 4
+            w3.buttonText = "Понятно";
+            w3.Apply();
+            EditorUtility.SetDirty(w3);
+
             var m3 = circle3.GetComponent<StepMarker>();
             if (m3 == null) m3 = circle3.AddComponent<StepMarker>();
             m3.window = w3;
