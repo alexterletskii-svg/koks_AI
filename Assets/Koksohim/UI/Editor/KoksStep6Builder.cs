@@ -75,6 +75,22 @@ namespace KoksUI.Editor
             EditorUtility.SetDirty(pt);
         }
 
+        // область наведения луча — по габаритам детали с запасом (маленькую деталь иначе трудно поймать лучом)
+        static void EnlargeHitArea(GameObject go)
+        {
+            var r = go.GetComponentInChildren<Renderer>();
+            if (r == null) return;
+            foreach (var old in go.GetComponents<BoxCollider>()) Object.DestroyImmediate(old);   // прошлая сборка / запасной коллайдер
+            Bounds b = r.bounds;
+            Vector3 ls = go.transform.lossyScale;
+            Vector3 inv = new Vector3(1f / Mathf.Max(0.0001f, Mathf.Abs(ls.x)), 1f / Mathf.Max(0.0001f, Mathf.Abs(ls.y)), 1f / Mathf.Max(0.0001f, Mathf.Abs(ls.z)));
+            Vector3 size = b.size + Vector3.one * 0.2f;
+            var bc = go.AddComponent<BoxCollider>();
+            bc.center = go.transform.InverseTransformPoint(b.center);
+            bc.size = Vector3.Scale(size, inv);
+            EditorUtility.SetDirty(bc);
+        }
+
         static ParticleSystem BuildWater(Transform cilWater)
         {
             var old = cilWater.Find("DrainWater");
@@ -153,26 +169,40 @@ namespace KoksUI.Editor
             if (circle8 == null || circle9 == null) return;
 
             // ===== шаг 6: ролики =====
-            var rollerDefs = new List<KoksInspectBuilder.Def>();
-            int n = 0;
+            // один ролик (ближайший к кругу 6): его проще найти и навести луч; остальные ролики — в тексте окон
+            string rollerName = null;
+            float rd = float.MaxValue;
             foreach (var r in RollerCandidates)
             {
-                if (n >= 3) break;
-                if (FindT(r) == null) continue;
-                n++;
-                rollerDefs.Add(new KoksInspectBuilder.Def(r, "Ролики", "Опорный ролик " + n,
-                    "Произвести осмотр состояния целостности блочков и опорных роликов кантовочного механизма."));
+                var t = FindT(r);
+                var rr = t != null ? t.GetComponentInChildren<Renderer>() : null;
+                if (rr == null) continue;
+                float d = (rr.bounds.ClosestPoint(circle6.position) - circle6.position).sqrMagnitude;
+                if (d < rd) { rd = d; rollerName = r; }
             }
-            if (rollerDefs.Count == 0) { Debug.LogError("[Koks UI] Не найдены ролики (Roller1, Roller1.002, Roller1.006, Roller2)."); return; }
+            if (rollerName == null) { Debug.LogError("[Koks UI] Не найдены ролики (Roller1, Roller1.002, Roller1.006, Roller2)."); return; }
+            var rollerDefs = new List<KoksInspectBuilder.Def>
+            {
+                new KoksInspectBuilder.Def(rollerName, "Кантовочный механизм", "Опорный ролик",
+                    "Произвести осмотр состояния целостности блочков и опорных роликов кантовочного механизма. Остальные ролики и блочки осматриваются так же.")
+            };
+            Debug.Log("[Koks UI] Для осмотра выбран ролик " + rollerName + ".");
             var hud3 = KoksInspectBuilder.BuildSet(rollerDefs.ToArray(), circle6.position, "CanvasInspect3", "InspectMarkers3", heading, body, medium);
             if (hud3 == null) return;
-            foreach (var p in hud3.points) NearestEnd(p, circle6.position);
+            foreach (var p in hud3.points)
+            {
+                NearestEnd(p, circle6.position);
+                p.markerSize = 0.16f;       // маркер крупнее — его видно издалека
+                p.markerPull = 0.5f;
+                EnlargeHitArea(p.gameObject);
+                EditorUtility.SetDirty(p);
+            }
 
             StepWindow w6 = w6Tr != null ? w6Tr.GetComponent<StepWindow>() : null;
             if (w6 == null) w6 = Win("CanvasStep6", circle6.position, heading, body, medium, "", "", "", "", new string[0], "", 0f);
             w6.stepText = "Шаг 6";
             w6.title = "Опорные ролики";
-            w6.description = "Следующим этапом осмотра является осмотр состояния целостности блочков и опорных роликов кантовочного механизма.";
+            w6.description = "Следующим этапом осмотра является осмотр состояния целостности блочков и опорных роликов кантовочного механизма. Осмотрите ролик, отмеченный ромбиком, остальные ролики и блочки осматриваются так же.";
             w6.checksHeader = "Что проверить";
             w6.checks = new[] { "Целостность блочков кантовочного механизма", "Целостность опорных роликов кантовочного механизма" };
             w6.buttonText = "Приступить к осмотру";
@@ -186,8 +216,8 @@ namespace KoksUI.Editor
             EditorUtility.SetDirty(m6);
 
             var done6 = Win("CanvasStep6Done", circle6.position, heading, body, medium,
-                "Шаг 6 выполнен", "Осмотр роликов завершён",
-                "Переходим к осмотру сточных линий газоподогревателя.",
+                "Шаг 6 выполнен", "Ролик осмотрен",
+                "Остальные ролики и блочки осматриваются так же. Переходим к осмотру сточных линий газоподогревателя.",
                 "Что дальше", new[] { "Пройдите к синему кругу" }, "Понятно", 6f);
             hud3.startWindow = w6;
             hud3.completionWindow = done6;
