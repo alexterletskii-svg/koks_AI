@@ -8,7 +8,7 @@ namespace KoksUI.Editor
     /// <summary>Koks → Build UI → 18. Писк газоанализатора (FirstScene). Можно повторно.</summary>
     public static class KoksGasBeepBuilder
     {
-        [MenuItem("Koks/Build UI/18. Писк газоанализатора (тоннель / клапаны)")]
+        [MenuItem("Koks/Build UI/18. Писк газоанализатора (тоннель и клапаны)")]
         public static void Build()
         {
             if (EditorApplication.isPlaying) { Debug.LogError("[Koks UI] Остановите Play."); return; }
