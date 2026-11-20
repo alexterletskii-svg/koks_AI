@@ -55,6 +55,7 @@ namespace KoksUI
             // то, что должно появиться после осмотра, скрыто до этого момента
             if (activateOnComplete != null)
                 foreach (var g in activateOnComplete) if (g != null) g.SetActive(false);
+            LayoutSegments();
             UIDepth.AlwaysOnTop(gameObject);
             HideAll();
             Refresh();
@@ -119,6 +120,26 @@ namespace KoksUI
                 if (completionWindow != null) completionWindow.Show();
                 if (activateOnComplete != null)
                     foreach (var g in activateOnComplete) if (g != null) g.SetActive(true);
+            }
+        }
+
+        // полоски счётчика растягиваются под число точек (сколько бы их ни было)
+        void LayoutSegments()
+        {
+            if (segments == null || segments.Length == 0 || points.Count == 0 || cardPanel == null) return;
+            var cr = cardPanel.transform as RectTransform;
+            float total = cr.sizeDelta.x - 56f, gap = 6f;
+            int n = points.Count;
+            float w = (total - gap * (n - 1)) / n;
+            for (int i = 0; i < segments.Length; i++)
+            {
+                if (segments[i] == null) continue;
+                bool on = i < n;
+                segments[i].gameObject.SetActive(on);
+                if (!on) continue;
+                var r = segments[i].rectTransform;
+                r.sizeDelta = new Vector2(w, r.sizeDelta.y);
+                r.anchoredPosition = new Vector2(28f + i * (w + gap), r.anchoredPosition.y);
             }
         }
 

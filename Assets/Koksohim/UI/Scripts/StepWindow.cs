@@ -19,7 +19,7 @@ namespace KoksUI
         [TextArea(2, 6)]
         public string description = "Здесь находится [название оборудования и для чего оно]. Его нужно осмотреть при приёмке смены.";
         public string checksHeader = "Что проверить";
-        [Tooltip("До трёх пунктов. Пустой пункт скрывается.")]
+        [Tooltip("По три пункта на страницу. Больше трёх — окно листается кнопками «Дальше» и «Назад».")]
         public string[] checks = { "Пункт проверки 1", "Пункт проверки 2", "Пункт проверки 3" };
         public string buttonText = "Приступить к осмотру";
 
@@ -47,8 +47,15 @@ namespace KoksUI
         public TMP_Text buttonLabel;
         public CanvasGroup group;
         public Button confirmButton;
+        [Tooltip("Только для окон на несколько страниц")]
+        public Button backButton;
+        public TMP_Text backLabel;
+        public TMP_Text pageLabel;
+        public string nextText = "Дальше";
+        public string backText = "Назад";
 
         bool wired;
+        int page;
         bool open;
         Coroutine fade;
         Canvas canvas;
@@ -63,7 +70,8 @@ namespace KoksUI
         void Wire()
         {
             if (wired || confirmButton == null) return;
-            confirmButton.onClick.AddListener(Confirm);
+            confirmButton.onClick.AddListener(OnConfirmClicked);
+            if (backButton != null) backButton.onClick.AddListener(OnBackClicked);
             wired = true;
         }
 
@@ -72,17 +80,47 @@ namespace KoksUI
             Apply();
         }
 
+        int Pages()
+        {
+            int n = 0;
+            if (checks != null)
+                for (int i = 0; i < checks.Length; i++) if (!string.IsNullOrEmpty(checks[i])) n = i + 1;
+            int per = checkLabels != null && checkLabels.Length > 0 ? checkLabels.Length : 3;
+            return Mathf.Max(1, (n + per - 1) / per);
+        }
+
         public void Apply()
         {
             if (stepLabel != null) stepLabel.text = stepText;
             if (titleLabel != null) titleLabel.text = title;
             if (descriptionLabel != null) descriptionLabel.text = description;
             if (checksHeaderLabel != null) checksHeaderLabel.text = checksHeader;
-            if (buttonLabel != null) buttonLabel.text = buttonText;
+
+            int pages = Pages();
+            page = Mathf.Clamp(page, 0, pages - 1);
+            bool last = page >= pages - 1;
+            if (buttonLabel != null) buttonLabel.text = last ? buttonText : nextText;
+            if (pageLabel != null) pageLabel.text = pages > 1 ? (page + 1) + " из " + pages : "";
+            if (backButton != null)
+            {
+                backButton.gameObject.SetActive(page > 0);
+                if (backLabel != null) backLabel.text = backText;
+                // при кнопке «Назад» основная кнопка уже
+                var cr = confirmButton != null ? confirmButton.transform as RectTransform : null;
+                if (cr != null)
+                {
+                    float full = 644f, back = 200f, gap = 16f;
+                    float w = page > 0 ? full - back - gap : full;
+                    cr.sizeDelta = new Vector2(w, cr.sizeDelta.y);
+                    cr.anchoredPosition = new Vector2(page > 0 ? 28f + back + gap : 28f, cr.anchoredPosition.y);
+                }
+            }
+
             if (checkLabels == null) return;
             for (int i = 0; i < checkLabels.Length; i++)
             {
-                string t = (checks != null && i < checks.Length) ? checks[i] : "";
+                int idx = page * checkLabels.Length + i;
+                string t = (checks != null && idx < checks.Length) ? checks[idx] : "";
                 bool on = !string.IsNullOrEmpty(t);
                 if (checkLabels[i] != null)
                 {
@@ -94,6 +132,17 @@ namespace KoksUI
             }
         }
 
+        void OnConfirmClicked()
+        {
+            if (page < Pages() - 1) { page++; Apply(); return; }
+            Confirm();
+        }
+
+        void OnBackClicked()
+        {
+            if (page > 0) { page--; Apply(); }
+        }
+
         public bool IsOpen
         {
             get { return open; }
@@ -103,6 +152,8 @@ namespace KoksUI
         {
             if (open) return;
             open = true;
+            page = 0;
+            Apply();
             if (canvas == null) canvas = GetComponent<Canvas>();
             // камера нужна до включения: иначе XR-рейкастер регистрирует канвас без неё и сыплет KeyNotFoundException
             if (canvas != null && canvas.worldCamera == null) canvas.worldCamera = Camera.main;

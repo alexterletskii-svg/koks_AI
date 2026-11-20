@@ -23,10 +23,10 @@ namespace KoksUI
         public float fillSeconds = 2f;
         [Tooltip("Размер маркера, м")]
         public float markerSize = 0.1f;
-        [Tooltip("Насколько маркер выше центра объекта, м")]
-        public float markerLift = 0.1f;
-        [Tooltip("Для длинных объектов (тяги, стержни) маркер не выше этого от центра, м")]
-        public float maxAnchorHeight = 0.12f;
+        [Tooltip("Зазор между верхней точкой детали и маркером, м")]
+        public float markerGap = 0.08f;
+        [Tooltip("Ручной сдвиг маркера в мировых координатах, м (если нужно подвинуть)")]
+        public Vector3 markerOffset = Vector3.zero;
 
         [Tooltip("Писать в Console наведение/осмотр (для отладки)")]
         public bool debugLog = true;
@@ -71,7 +71,8 @@ namespace KoksUI
 
         void Start()
         {
-            rends = GetComponentsInChildren<Renderer>();
+            var own = GetComponent<Renderer>();
+            rends = own != null ? new[] { own } : GetComponentsInChildren<Renderer>();
             UpdateMarkerPosition();
             if (marker != null)
             {
@@ -85,12 +86,14 @@ namespace KoksUI
         // объект может двигаться анимацией — маркер едет вместе с ним
         void UpdateMarkerPosition()
         {
-            if (rends == null || rends.Length == 0) { MarkerPosition = transform.position + Vector3.up * markerLift; }
+            if (rends == null || rends.Length == 0)
+                MarkerPosition = transform.position + Vector3.up * markerGap + markerOffset;
             else
             {
                 Bounds b = rends[0].bounds;
                 for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
-                MarkerPosition = b.center + Vector3.up * (Mathf.Min(b.extents.y, maxAnchorHeight) + markerLift);
+                // строго над деталью: по центру и над самой верхней точкой
+                MarkerPosition = new Vector3(b.center.x, b.max.y, b.center.z) + Vector3.up * markerGap + markerOffset;
             }
             if (marker != null) marker.position = MarkerPosition;
         }

@@ -66,14 +66,19 @@ namespace KoksUI.Editor
             Debug.Log("[Koks UI] Окно шага собрано: CanvasStep1, круг: " + marker.name + ". Тексты — в Inspector, компонент Step Window.");
         }
 
-        internal static StepWindow CreateWindow(string name, Vector3 pos, TMP_FontAsset heading, TMP_FontAsset body, TMP_FontAsset medium)
+        internal static StepWindow CreateWindow(string name, Vector3 pos, TMP_FontAsset heading, TMP_FontAsset body, TMP_FontAsset medium, bool paged = false)
         {
+            float h = paged ? 740f : H;     // окно на несколько страниц выше: пункты в две строки
+            float slot = paged ? 66f : 50f;
+            float barH = paged ? 56f : 36f;
+            float lblH = paged ? 62f : 46f;
+            float btnY = paged ? 640f : 576f;
             foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (t != null && t.parent == null && t.name == name) Object.DestroyImmediate(t.gameObject);
 
             var root = new GameObject(name, typeof(RectTransform));
             var rt = (RectTransform)root.transform;
-            rt.sizeDelta = new Vector2(W, H);
+            rt.sizeDelta = new Vector2(W, h);
             rt.localScale = Vector3.one * 0.001f; // 700 px = 0,7 м
             rt.position = pos;
 
@@ -87,10 +92,10 @@ namespace KoksUI.Editor
             Color dark = KoksUIBuilder.Dark;
 
             KoksUIBuilder.Img("PanelFill", root.transform, KoksUIBuilder.Spr("panel_fill"),
-                KoksUIBuilder.Hex("14191E", 0.95f), 0, 0, W, H);
+                KoksUIBuilder.Hex("14191E", 0.95f), 0, 0, W, h);
             KoksUIBuilder.Img("Hazard", root.transform, KoksUIBuilder.Spr("hazard"), Color.white, 0, 0, 260, 10, Image.Type.Simple);
             KoksUIBuilder.Img("PanelFrame", root.transform, KoksUIBuilder.Spr("panel_frame"),
-                new Color(1f, 1f, 1f, 0.16f), 0, 0, W, H);
+                new Color(1f, 1f, 1f, 0.16f), 0, 0, W, h);
 
             // тег шага
             var chip = KoksUIBuilder.Img("StepChip", root.transform, KoksUIBuilder.Spr("chip"), Color.white, 28, 34, 240, 48);
@@ -121,14 +126,15 @@ namespace KoksUI.Editor
             var bars = new GameObject[3];
             for (int i = 0; i < 3; i++)
             {
-                float y = 420f + i * 50f;
-                bars[i] = KoksUIBuilder.Img("Bar" + (i + 1), root.transform, null, heat, 28, y + 5, 10, 36).gameObject;
+                float y = 420f + i * slot;
+                bars[i] = KoksUIBuilder.Img("Bar" + (i + 1), root.transform, null, heat, 28, y + 3, 10, barH).gameObject;
                 labels[i] = KoksUIBuilder.Txt("Check" + (i + 1), root.transform, "", medium, 27, ink,
-                    TextAlignmentOptions.MidlineLeft, 54, y, 618, 46);
+                    TextAlignmentOptions.MidlineLeft, 54, y, 618, lblH, paged);
+                if (paged) { labels[i].enableAutoSizing = true; labels[i].fontSizeMin = 18; labels[i].fontSizeMax = 26; }
             }
 
             // кнопка
-            var btnImg = KoksUIBuilder.Img("ConfirmButton", root.transform, KoksUIBuilder.Spr("btn_heat"), Color.white, 28, 576, 644, 84);
+            var btnImg = KoksUIBuilder.Img("ConfirmButton", root.transform, KoksUIBuilder.Spr("btn_heat"), Color.white, 28, btnY, 644, 84);
             btnImg.raycastTarget = true;
             var btn = btnImg.gameObject.AddComponent<Button>();
             btn.targetGraphic = btnImg;
@@ -141,6 +147,20 @@ namespace KoksUI.Editor
             var hv = btnImg.gameObject.AddComponent<UIHover>();
             hv.target = hover.gameObject;
 
+            Button backBtn = null;
+            TMP_Text backLbl = null, pageLbl = null;
+            if (paged)
+            {
+                var backImg = KoksUIBuilder.Img("BackButton", root.transform, KoksUIBuilder.Spr("btn_outline"), Color.white, 28, btnY, 200, 84);
+                backImg.raycastTarget = true;
+                backBtn = backImg.gameObject.AddComponent<Button>();
+                backBtn.targetGraphic = backImg;
+                backBtn.colors = KoksUIBuilder.Tint(Color.white, new Color(1f, 1f, 1f, 0.8f), new Color(1f, 1f, 1f, 0.6f), KoksUIBuilder.Hex("6B6F73"));
+                backLbl = KoksUIBuilder.Txt("Label", backImg.transform, "Назад", medium, 30, Color.white, TextAlignmentOptions.Center, 0, 0, 200, 84);
+                backImg.gameObject.SetActive(false);
+                pageLbl = KoksUIBuilder.Txt("PageLabel", root.transform, "", medium, 24, mute, TextAlignmentOptions.MidlineRight, 472, 372, 200, 40);
+            }
+
             // компонент окна
             var win = root.AddComponent<StepWindow>();
             win.stepLabel = step;
@@ -152,6 +172,9 @@ namespace KoksUI.Editor
             win.buttonLabel = btnLabel;
             win.group = group;
             win.confirmButton = btn;
+            win.backButton = backBtn;
+            win.backLabel = backLbl;
+            win.pageLabel = pageLbl;
 
             step.text = win.stepText;
             title.text = win.title;

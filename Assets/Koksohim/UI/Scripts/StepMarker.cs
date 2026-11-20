@@ -12,8 +12,8 @@ namespace KoksUI
     {
         public StepWindow window;
 
-        [Tooltip("Радиус срабатывания по горизонтали, м")]
-        public float radius = 1.5f;
+        [Tooltip("Запас к радиусу самого кольца, м. Окно появляется, когда игрок встал в кольцо.")]
+        public float extraRadius = 0.2f;
         [Tooltip("Допуск по высоте: голова не ниже круга на столько и не выше, чем на maxHeight")]
         public float minHeight = -0.5f;
         public float maxHeight = 3.0f;
@@ -26,6 +26,7 @@ namespace KoksUI
         [Tooltip("Игрок нажал «Приступить к осмотру» — сюда можно подключить дальнейшие действия")]
         public UnityEvent onConfirmed;
 
+        float radius = 0.6f;
         bool shown;
         bool subscribed;
 
@@ -44,8 +45,10 @@ namespace KoksUI
 
         void Start()
         {
+            var rend = GetComponent<Renderer>();
+            if (rend != null) radius = Mathf.Max(rend.bounds.extents.x, rend.bounds.extents.z) + extraRadius;
             Subscribe();
-            Debug.Log("[StepMarker] старт на '" + name + "', окно: " + (window != null ? window.name : "НЕ НАЗНАЧЕНО") + ", радиус " + radius);
+            Debug.Log("[StepMarker] старт на '" + name + "', окно: " + (window != null ? window.name : "НЕ НАЗНАЧЕНО") + ", радиус срабатывания " + radius.ToString("F2"));
         }
 
         void Subscribe()
