@@ -41,13 +41,12 @@ namespace KoksUI
         public GameObject markerCenter;
         public GameObject markerCheck;
 
-        /// <summary>Маркер виден сквозь предметы (включается, когда осталось 1–3 точки: чтобы их было не потерять).</summary>
+        /// <summary>Маркер крупнее (включается, когда осталось 1–3 точки: чтобы их было проще найти).</summary>
         public void SetSeeThrough(bool on)
         {
             if (marker == null || seeThrough == on) return;
             seeThrough = on;
-            foreach (var g in marker.GetComponentsInChildren<Graphic>(true))
-                g.material = on ? UIDepth.MarkerOverlayMaterial : UIDepth.MarkerMaterial;
+            // только крупнее: сквозь геометрию маркеры не просвечивают никогда
         }
         bool seeThrough;
 
