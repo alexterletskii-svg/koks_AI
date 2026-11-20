@@ -4,16 +4,17 @@ using UnityEngine.UI;
 namespace KoksUI
 {
     /// <summary>
-    /// Значок «Журнал» на экзамене: висит перед игроком слева-внизу и следует за головой.
+    /// Значок «Журнал» на экзамене: висит в левом верхнем углу поля зрения и следует за головой.
     /// Наведите луч и нажмите триггер — открывается журнал, где результаты осмотра записываются самому.
     /// </summary>
     public class ExamJournalIcon : MonoBehaviour
     {
         public Button button;
         public JournalWindow journal;
-        public float distance = 0.9f;
-        public float shiftLeft = 0.32f;
-        public float shiftDown = 0.3f;
+        [Tooltip("Расстояние от глаз и смещение в левый верхний угол поля зрения, м")]
+        public float distance = 0.95f;
+        public float shiftLeft = 0.5f;
+        public float shiftUp = 0.3f;
 
         Canvas canvas;
         bool visible;
@@ -25,8 +26,12 @@ namespace KoksUI
             if (button != null)
             {
                 button.onClick.AddListener(Open);
-                var im = button.targetGraphic as Image;
-                if (im != null) im.raycastPadding = new Vector4(-25f, -25f, -25f, -25f);
+                // кликабельна только подложка: иконка, подпись и рамка не должны перехватывать луч
+                var target = button.targetGraphic;
+                foreach (var g in GetComponentsInChildren<Graphic>(true))
+                    if (g != target) g.raycastTarget = false;
+                var im = target as Image;
+                if (im != null) im.raycastPadding = new Vector4(-20f, -20f, -20f, -20f);
             }
             if (canvas != null) canvas.enabled = false;
         }
@@ -51,14 +56,11 @@ namespace KoksUI
             Camera cam = Camera.main;
             if (cam == null) return;
             Transform c = cam.transform;
-            Vector3 fwd = c.forward; fwd.y = 0f;
-            if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.forward;
-            fwd.Normalize();
-            Vector3 right = Vector3.Cross(Vector3.up, fwd);
-            Vector3 target = c.position + fwd * distance - right * shiftLeft + Vector3.down * shiftDown;
-            transform.position = Vector3.Lerp(transform.position, target, 1f - Mathf.Exp(-8f * Time.unscaledDeltaTime));
-            Vector3 look = transform.position - c.position; look.y = 0f;
-            if (look.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
+            // привязана к голове: всегда в левом верхнем углу взгляда, с лёгким запаздыванием
+            Vector3 target = c.position + c.forward * distance - c.right * shiftLeft + c.up * shiftUp;
+            transform.position = Vector3.Lerp(transform.position, target, 1f - Mathf.Exp(-10f * Time.unscaledDeltaTime));
+            Vector3 look = transform.position - c.position;
+            if (look.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(look.normalized, c.up);
         }
     }
 }

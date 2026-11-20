@@ -10,7 +10,7 @@ namespace KoksUI
     /// Режим «Экзамен» в FirstScene. В обучении (ExamMode.Active == false) выключается и ничего не делает.
     /// В экзамене: прячет подсказки обучения (синие круги, окна шагов, ромбики и карточки), игрок осматривает
     /// детали сам — держит луч на детали 2 секунды. Считает 9 заданий и время (с входа в газовый тоннель),
-    /// завершает экзамен, когда игрок наводит луч на дверь door.004, и показывает итоговое окно.
+    /// завершает экзамен, когда игрок нажимает ручку двери выхода и подтверждает завершение, и показывает итоговое окно.
     /// </summary>
     [DefaultExecutionOrder(-1000)]
     public class ExamController : MonoBehaviour
@@ -32,31 +32,32 @@ namespace KoksUI
 
         [Header("Окна и значки (собирает Koks → Build UI → 20)")]
         public ExamResultWindow result;
+        public ExamFinishWindow finishWindow;
         public ExamJournalIcon journalIcon;
         public GameObject ringRoot;
         public Image ringFill;
 
         [Header("Вводные тексты экзамена")]
         public string introStatus = "Экзамен начался";
-        public string introTitle = "Экзамен: осмотр оборудования тоннелей коксовой батареи";
+        public string introTitle = "Экзамен: осмотр тоннелей коксовой батареи";
         [TextArea(2, 5)]
         public string introDescription = "Осмотр проводится самостоятельно, без подсказок. Время засчитывается с момента входа в газовый тоннель.";
         public string[] introBullets =
         {
-            "Осмотр засчитывается, если держать луч на детали 2 секунды",
+            "Держите луч на детали 2 секунды",
             "Результаты осмотра запишите в журнал",
-            "Закончите осмотр, наведя луч на дверь выхода"
+            "Завершите осмотр у двери выхода"
         };
         public string tunnelStep = "Экзамен";
         public string tunnelTitle = "Вы в газовом тоннеле";
         [TextArea(2, 5)]
-        public string tunnelDescription = "Осмотрите оборудование самостоятельно: подсказок нет. Когда закончите, наведите луч на дверь выхода.";
+        public string tunnelDescription = "Осмотрите оборудование самостоятельно: подсказок нет. Когда закончите, нажмите на ручку двери выхода.";
         public string tunnelChecksHeader = "Как действовать";
         public string[] tunnelChecks =
         {
             "Держите луч на детали 2 секунды",
             "Результаты запишите в журнал",
-            "Завершите осмотр у двери"
+            "Завершите осмотр у двери выхода"
         };
         public string tunnelButton = "Начать осмотр";
 
@@ -87,6 +88,8 @@ namespace KoksUI
         }
 
         readonly List<Pt> pts = new List<Pt>();
+        readonly List<GameObject> exitCanvases = new List<GameObject>();
+        float finishCooldown;
         readonly bool[] done = new bool[TaskNames.Length];
         bool started, finished;
         float startTime;
@@ -131,6 +134,18 @@ namespace KoksUI
                 w.autoConfirmSeconds = 0f;
             }
 
+            // голосовое приветствие обучения в экзамене не нужно
+            foreach (var w in FindObjectsByType<WelcomeAudioPlayer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                w.enabled = false;
+                var a = w.GetComponent<AudioSource>();
+                if (a != null) { a.playOnAwake = false; a.Stop(); }
+            }
+
+            // окна «Перейти в другое помещение» (ручка двери): в экзамене вместо них — подтверждение завершения
+            foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (t.name == "CanvasExit") exitCanvases.Add(t.gameObject);
+
             // подсказки обучения: синие круги и всё, что от них зависит
             foreach (var m in FindObjectsByType<StepMarker>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
@@ -168,7 +183,6 @@ namespace KoksUI
             if (door == null)
                 foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                     if (t.name == "door.004") { door = t; break; }
-            if (door == null) Debug.LogError("[Exam] не найден объект door.004: экзамен нельзя будет завершить. Назначьте Door в Inspector.");
 
             if (condensate == null)
                 foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
@@ -274,6 +288,20 @@ namespace KoksUI
             if (journalIcon != null) journalIcon.SetVisible(started && !blocked);
             if (!started) return;
 
+            // ручка двери выхода открыла окно перехода — подменяем его окном завершения экзамена
+            foreach (var ec in exitCanvases)
+            {
+                if (ec == null || !ec.activeSelf) continue;
+                ec.SetActive(false);
+                if (Time.unscaledTime < finishCooldown) continue;
+                if (finishWindow != null && !finishWindow.IsOpen)
+                {
+                    Debug.Log("[Exam] нажата ручка выхода: подтверждение завершения");
+                    finishWindow.Show(Finish, () => finishCooldown = Time.unscaledTime + 1.5f);
+                }
+                else if (finishWindow == null) { Finish(); return; }
+            }
+
             float dt = Time.deltaTime;
             float ring = 0f;
             if (!blocked)
@@ -314,15 +342,6 @@ namespace KoksUI
                     condHeld = look ? condHeld + dt : Mathf.Max(0f, condHeld - dt * 1.5f);
                     if (cand == null && condHeld > 0f) ring = Mathf.Max(ring, condHeld / condensateSeconds);
                     if (condHeld >= condensateSeconds) { done[Condensate] = true; Debug.Log("[Exam] конденсатоотводчик осмотрен"); }
-                }
-
-                // дверь: завершение экзамена
-                if (door != null)
-                {
-                    bool at = RayHitsObject(door);
-                    doorHeld = at ? doorHeld + dt : Mathf.Max(0f, doorHeld - dt * 2f);
-                    if (at && ring <= 0f) ring = doorHeld / doorSeconds;
-                    if (doorHeld >= doorSeconds) { Finish(); return; }
                 }
             }
             UpdateRing(ring, blocked);

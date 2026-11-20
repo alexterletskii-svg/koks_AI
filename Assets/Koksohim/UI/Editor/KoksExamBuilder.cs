@@ -13,7 +13,7 @@ namespace KoksUI.Editor
     /// </summary>
     public static class KoksExamBuilder
     {
-        static readonly string[] Names = { "ExamController", "CanvasExamRing", "CanvasExamJournal", "CanvasExamResult" };
+        static readonly string[] Names = { "ExamController", "CanvasExamRing", "CanvasExamJournal", "CanvasExamResult", "CanvasExamFinish" };
 
         [MenuItem("Koks/Build UI/20. Экзамен: контроллер, итоговое окно, значок журнала (FirstScene)")]
         public static void Build()
@@ -49,7 +49,7 @@ namespace KoksUI.Editor
             // ---- значок «Журнал»
             var journal = Object.FindFirstObjectByType<JournalWindow>(FindObjectsInactive.Include);
             if (journal == null) Debug.LogWarning("[Koks UI] В сцене нет JournalWindow: значок журнала ничего не откроет (запустите меню журнала).");
-            var jr = NewCanvas("CanvasExamJournal", 170, 190, 0.0008f, true);
+            var jr = NewCanvas("CanvasExamJournal", 170, 190, 0.0006f, true);
             var jbg = KoksUIBuilder.Img("Bg", jr.transform, KoksUIBuilder.Spr("panel_fill"), KoksUIBuilder.Hex("14191E", 0.95f), 0, 0, 170, 190);
             jbg.raycastTarget = true;
             KoksUIBuilder.Img("Frame", jr.transform, KoksUIBuilder.Spr("panel_frame"), KoksUIBuilder.Heat, 0, 0, 170, 190);
@@ -61,6 +61,32 @@ namespace KoksUI.Editor
             var jicon = jr.AddComponent<ExamJournalIcon>();
             jicon.button = jbtn;
             jicon.journal = journal;
+
+            // ---- окно «Завершить экзамен?»
+            const float FW = 640f, FH = 330f;
+            var fg = NewCanvas("CanvasExamFinish", FW, FH, 0.001f, true);
+            var ft = fg.transform;
+            KoksUIBuilder.Img("PanelFill", ft, KoksUIBuilder.Spr("panel_fill"), KoksUIBuilder.Hex("14191E", 0.96f), 0, 0, FW, FH);
+            KoksUIBuilder.Img("Hazard", ft, KoksUIBuilder.Spr("hazard"), Color.white, 0, 0, 260, 10, Image.Type.Simple);
+            KoksUIBuilder.Img("PanelFrame", ft, KoksUIBuilder.Spr("panel_frame"), new Color(1f, 1f, 1f, 0.16f), 0, 0, FW, FH);
+            KoksUIBuilder.Txt("Title", ft, "Завершить экзамен?", heading, 44, Color.white, TextAlignmentOptions.MidlineLeft, 28, 36, 584, 62);
+            KoksUIBuilder.Txt("Text", ft, "Результат осмотра будет подведён сразу. Вернуться к осмотру после завершения нельзя.", body, 26, KoksUIBuilder.Mute, TextAlignmentOptions.TopLeft, 28, 112, 584, 90);
+            var fbImg = KoksUIBuilder.Img("FinishButton", ft, KoksUIBuilder.Spr("btn_heat"), Color.white, 28, 226, 292, 76);
+            fbImg.raycastTarget = true;
+            var fbtn = fbImg.gameObject.AddComponent<Button>();
+            fbtn.targetGraphic = fbImg;
+            fbtn.colors = KoksUIBuilder.Tint(KoksUIBuilder.Heat, KoksUIBuilder.HeatHi, KoksUIBuilder.Hex("E0AB00"), KoksUIBuilder.Hex("6B6F73"));
+            KoksUIBuilder.Txt("Label", fbImg.transform, "Завершить", heading, 30, KoksUIBuilder.Dark, TextAlignmentOptions.Center, 0, 0, 292, 76);
+            var cbImg = KoksUIBuilder.Img("ContinueButton", ft, KoksUIBuilder.Spr("btn_outline"), Color.white, 340, 226, 272, 76);
+            cbImg.raycastTarget = true;
+            var cbtn = cbImg.gameObject.AddComponent<Button>();
+            cbtn.targetGraphic = cbImg;
+            cbtn.colors = KoksUIBuilder.Tint(new Color(1f, 1f, 1f, 0.5f), Color.white, new Color(0.8f, 0.8f, 0.8f, 1f), new Color(1f, 1f, 1f, 0.2f));
+            KoksUIBuilder.Txt("Label", cbImg.transform, "Продолжить", heading, 30, Color.white, TextAlignmentOptions.Center, 0, 0, 272, 76);
+            var fwin = fg.AddComponent<ExamFinishWindow>();
+            fwin.finishButton = fbtn; fwin.continueButton = cbtn;
+            fwin.group = fg.GetComponent<CanvasGroup>();
+            fg.GetComponent<Canvas>().enabled = false;
 
             // ---- итоговое окно
             const float W = 700f;
@@ -111,6 +137,7 @@ namespace KoksUI.Editor
             win.group = rg.GetComponent<CanvasGroup>();
 
             ctrl.result = win;
+            ctrl.finishWindow = fwin;
             ctrl.journalIcon = jicon;
             ctrl.ringRoot = ring;
             ctrl.ringFill = fill;
