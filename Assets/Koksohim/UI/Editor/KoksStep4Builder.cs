@@ -25,7 +25,7 @@ namespace KoksUI.Editor
             "Состояние канатов и жимков канатов кантовочного механизма"
         };
 
-        static readonly KoksInspectBuilder.Def[] Defs =
+        static readonly KoksInspectBuilder.Def[] BaseDefs =
         {
             new KoksInspectBuilder.Def("Cylinder.341", "Кантовочные краны", "Пробки стопорных кранов",
                 "Произвести осмотр положений пробок стопорных кранов."),
@@ -33,10 +33,6 @@ namespace KoksUI.Editor
                 "Произвести осмотр соединений рычагов кантовочных кранов со штангой кантовочной лебёдки."),
             new KoksInspectBuilder.Def("Cylinder.161", "Обезграфичивание", "Крышки устройства",
                 "Произвести осмотр положений крышек устройства обезграфичивания."),
-            new KoksInspectBuilder.Def("Pipe_2", "Газопроводы", "Газопровод 1",
-                "Произвести осмотр внешней поверхности распределительных газопроводов. Результаты осмотра зафиксировать в эксплуатационном журнале."),
-            new KoksInspectBuilder.Def("Pipe_3", "Газопроводы", "Газопровод 2",
-                "Произвести осмотр внешней поверхности распределительных газопроводов. Результаты осмотра зафиксировать в эксплуатационном журнале."),
             new KoksInspectBuilder.Def("Cylinder.334", Kantovka, "Штанги",
                 "Произвести осмотр состояния штанг кантовочного механизма."),
             new KoksInspectBuilder.Def("Cube.053", Kantovka, "Канаты и жимки",
@@ -44,6 +40,26 @@ namespace KoksUI.Editor
             new KoksInspectBuilder.Def("Roller1.003", Kantovka, "Канаты и жимки",
                 "Произвести осмотр состояния канатов и жимков канатов кантовочного механизма."),
         };
+
+        // одна труба вместо двух: берём ту, что ближе к кругу 3 (Pipe_2 или Pipe_3)
+        static KoksInspectBuilder.Def[] MakeDefs(Vector3 near)
+        {
+            string best = "Pipe_2";
+            float bd = float.MaxValue;
+            foreach (var n in new[] { "Pipe_2", "Pipe_3" })
+            {
+                var t = FindT(n);
+                var r = t != null ? t.GetComponent<Renderer>() : null;
+                if (r == null) continue;
+                float d = (r.bounds.ClosestPoint(near) - near).sqrMagnitude;
+                if (d < bd) { bd = d; best = n; }
+            }
+            var list = new List<KoksInspectBuilder.Def>(BaseDefs);
+            list.Insert(3, new KoksInspectBuilder.Def(best, "Газопроводы", "Газопровод",
+                "Произвести осмотр внешней поверхности распределительных газопроводов. Результаты осмотра зафиксировать в эксплуатационном журнале."));
+            Debug.Log("[Koks UI] Для осмотра газопровода выбрана труба " + best + ".");
+            return list.ToArray();
+        }
 
         static Transform FindT(string name, bool rootOnly = false)
         {
@@ -82,13 +98,13 @@ namespace KoksUI.Editor
                 Transform o;
                 while ((o = FindT(n, true)) != null) Object.DestroyImmediate(o.gameObject);
             }
-            var hud = KoksInspectBuilder.BuildSet(Defs, circle3.position, "CanvasInspect2", "InspectMarkers2", heading, body, medium);
+            var hud = KoksInspectBuilder.BuildSet(MakeDefs(circle3.position), circle3.position, "CanvasInspect2", "InspectMarkers2", heading, body, medium);
             if (hud == null) return;
 
-            // Roller1.003 — один меш из множества одинаковых роликов: ромбик ставим на ролик у ближнего к кругу 3 конца
+            // длинные меши (труба, Roller1.003 — множество роликов одним мешом): ромбик на ближайшем к кругу 3 месте
             foreach (var pt in hud.points)
             {
-                if (pt == null || pt.name != "Roller1.003") continue;
+                if (pt == null || !(pt.name.StartsWith("Pipe_") || pt.name == "Roller1.003")) continue;
                 var rr = pt.GetComponent<Renderer>();
                 if (rr == null) continue;
                 Bounds bb = rr.bounds;
@@ -96,8 +112,8 @@ namespace KoksUI.Editor
                 Vector3 c = bb.center, from = circle3.position;
                 float inset = 0.5f;
                 Vector3 target = c;
-                if (alongX) target.x = from.x < c.x ? bb.min.x + inset : bb.max.x - inset;
-                else target.z = from.z < c.z ? bb.min.z + inset : bb.max.z - inset;
+                if (alongX) target.x = Mathf.Clamp(from.x, bb.min.x + inset, bb.max.x - inset);
+                else target.z = Mathf.Clamp(from.z, bb.min.z + inset, bb.max.z - inset);
                 pt.markerOffset = new Vector3(target.x - c.x, 0f, target.z - c.z);
                 EditorUtility.SetDirty(pt);
             }
