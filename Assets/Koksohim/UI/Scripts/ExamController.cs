@@ -179,7 +179,20 @@ namespace KoksUI
             drain = drain != null ? drain : FindFirstObjectByType<DrainValve>(FindObjectsInactive.Include);
             if (drain != null) { drain.examMode = true; drain.closeWindow = null; drain.window = null; drain.activateAfter = null; }
             journal = journal != null ? journal : FindFirstObjectByType<JournalWindow>(FindObjectsInactive.Include);
-            if (journal != null) journal.Written += OnJournalWritten;
+            if (journal != null) { journal.Written += OnJournalWritten; journal.entryProvider = JournalEntry; }
+        }
+
+        static readonly int[] JournalNeeds = { 1, 2, 3, 4, 6, 7, 9 };
+        static readonly string[] JournalShort = { "", "клапаны", "кантовочные краны", "обезграфичивание", "газопроводы", "", "штанги и канаты", "блочки и ролики", "", "конденсатоотводчик" };
+
+        JournalWindow.Entry JournalEntry()
+        {
+            var missing = new List<string>();
+            foreach (int t in JournalNeeds) if (!done[t]) missing.Add(JournalShort[t]);
+            var e = new JournalWindow.Entry();
+            if (missing.Count == 0) { e.valid = true; e.content = "Осмотр тоннелей выполнен."; e.remarks = "Замечаний нет"; }
+            else { e.valid = false; e.content = "Не осмотрено (" + missing.Count + "): " + string.Join(", ", missing); e.remarks = "Не принято"; }
+            return e;
         }
 
         void Start()

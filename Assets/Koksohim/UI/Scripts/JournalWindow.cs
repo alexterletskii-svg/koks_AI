@@ -48,6 +48,16 @@ namespace KoksUI
         /// <summary>Запись в журнал сделана (экзамен считает по этому событию).</summary>
         public event System.Action Written;
 
+        /// <summary>Запись для экзамена: текст зависит от того, что осмотрено; valid=false — запись не засчитывается.</summary>
+        public struct Entry { public string content, remarks; public bool valid; }
+        /// <summary>Если задан (экзамен) — вместо фиксированного текста берётся запись отсюда, записей может быть несколько.</summary>
+        public System.Func<Entry> entryProvider;
+
+        readonly System.Collections.Generic.List<string[]> entries = new System.Collections.Generic.List<string[]>();
+        bool anyValid;
+        Button closeButton;
+        const int MaxEntries = 5;
+
         Canvas canvas;
         bool open;
         bool busy;
@@ -70,6 +80,44 @@ namespace KoksUI
                 if (im != null) im.raycastPadding = new Vector4(-40f, -30f, -40f, -30f);
             }
             Clear();
+            if (ExamMode.Active) BuildCloseButton();
+        }
+
+        void BuildCloseButton()
+        {
+            var parent = (RectTransform)transform;
+            var go = new GameObject("CloseButton", typeof(RectTransform));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(parent, false);
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0f, 1f);
+            rt.sizeDelta = new Vector2(64f, 64f);
+            rt.anchoredPosition = new Vector2(parent.sizeDelta.x - 92f, -20f);
+            rt.SetAsLastSibling();
+            var bg = go.AddComponent<Image>();
+            bg.color = new Color(0.55f, 0.13f, 0.1f, 1f);
+            bg.raycastTarget = true;
+            bg.raycastPadding = new Vector4(-12f, -12f, -12f, -12f);
+            for (int i = 0; i < 2; i++)
+            {
+                var bar = new GameObject("Bar", typeof(RectTransform));
+                var br = (RectTransform)bar.transform;
+                br.SetParent(rt, false);
+                br.anchorMin = br.anchorMax = br.pivot = new Vector2(0.5f, 0.5f);
+                br.sizeDelta = new Vector2(38f, 7f);
+                br.localRotation = Quaternion.Euler(0f, 0f, i == 0 ? 45f : -45f);
+                var im = bar.AddComponent<Image>();
+                im.color = Color.white;
+                im.raycastTarget = false;
+            }
+            closeButton = go.AddComponent<Button>();
+            closeButton.targetGraphic = bg;
+            var c = closeButton.colors;
+            c.normalColor = Color.white;
+            c.highlightedColor = new Color(1f, 0.75f, 0.7f, 1f);
+            c.pressedColor = new Color(0.8f, 0.6f, 0.55f, 1f);
+            c.selectedColor = Color.white;
+            closeButton.colors = c;
+            closeButton.onClick.AddListener(() => { if (!busy) Hide(); });
         }
 
         public bool IsOpen { get { return open; } }
@@ -81,6 +129,7 @@ namespace KoksUI
             if (remarksText != null) remarksText.text = "";
             if (signature != null) signature.fillAmount = 0f;
             if (stamp != null) { stamp.alpha = 0f; stamp.transform.localScale = Vector3.one * 1.4f; }
+            if (ExamMode.Active) RenderEntries(-1);
             if (actionLabel != null) actionLabel.text = writeText;
             if (actionButton != null) actionButton.interactable = true;
             busy = false;
@@ -135,11 +184,105 @@ namespace KoksUI
                 transform.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
         }
 
+        // экзамен: показать все прежние записи (по одной строке), последнюю — частично, если typed >= 0
+        void RenderEntries(int skipLast)
+        {
+            if (!ExamMode.Active) return;
+            foreach (var l in new[] { dateText, contentText, remarksText })
+            {
+                if (l == null) continue;
+                l.enableWordWrapping = false;
+                l.overflowMode = TextOverflowModes.Ellipsis;
+                l.fontSize = 24f;
+                l.maxVisibleCharacters = 99999;
+            }
+            string d = "", c = "", r = "";
+            int n = entries.Count - (skipLast >= 0 ? 1 : 0);
+            for (int i = 0; i < n; i++)
+            {
+                d += entries[i][0] + "\n"; c += entries[i][1] + "\n"; r += entries[i][2] + "\n";
+            }
+            if (dateText != null) dateText.text = d;
+            if (contentText != null) contentText.text = c;
+            if (remarksText != null) remarksText.text = r;
+            if (signature != null) signature.fillAmount = anyValid && skipLast < 0 ? 1f : 0f;
+        }
+
         void OnAction()
         {
             if (busy) return;
+            if (ExamMode.Active) { run = StartCoroutine(WriteExam()); return; }
             if (written) { Hide(); return; }
             run = StartCoroutine(Write());
+        }
+
+        IEnumerator WriteExam()
+        {
+            busy = true;
+            if (actionButton != null) actionButton.interactable = false;
+            if (actionLabel != null) actionLabel.text = writingText;
+
+            Entry e = entryProvider != null ? entryProvider() : new Entry { content = content, remarks = remarks, valid = true };
+            entries.Add(new[] { System.DateTime.Now.ToString(dateFormat), e.content, e.remarks });
+            while (entries.Count > MaxEntries) entries.RemoveAt(0);
+            if (e.valid) anyValid = true;
+            // запись принимается (или нет) сразу: закрытие окна не потеряет результат
+            if (Written != null && e.valid) Written();
+
+            RenderEntries(1);
+            string pd = dateText != null ? dateText.text : "", pc = contentText != null ? contentText.text : "", pr = remarksText != null ? remarksText.text : "";
+            var last = entries[entries.Count - 1];
+            if (stamp != null) { stamp.alpha = 0f; stamp.transform.localScale = Vector3.one * 1.4f; }
+            if (signature != null) signature.fillAmount = 0f;
+
+            yield return TypeLine(dateText, pd, last[0]);
+            yield return TypeLine(contentText, pc, last[1]);
+            yield return TypeLine(remarksText, pr, last[2]);
+
+            if (e.valid && signature != null)
+            {
+                float t = 0f;
+                while (t < signatureSeconds)
+                {
+                    t += Time.unscaledDeltaTime;
+                    signature.fillAmount = Mathf.Clamp01(t / signatureSeconds);
+                    yield return null;
+                }
+                signature.fillAmount = 1f;
+            }
+            if (stamp != null)
+            {
+                var st = stamp.GetComponentInChildren<TMP_Text>(true);
+                if (st != null) { st.text = e.valid ? "Записано" : "Не принято"; st.color = e.valid ? new Color(0.294f, 0.827f, 0.482f, 1f) : new Color(0.75f, 0.15f, 0.1f); }
+                float t = 0f;
+                while (t < 0.25f)
+                {
+                    t += Time.unscaledDeltaTime;
+                    float k = Mathf.Clamp01(t / 0.25f);
+                    stamp.alpha = k;
+                    stamp.transform.localScale = Vector3.one * Mathf.Lerp(1.4f, 1f, k);
+                    yield return null;
+                }
+                stamp.alpha = 1f;
+                stamp.transform.localScale = Vector3.one;
+            }
+            busy = false;
+            run = null;
+            if (actionLabel != null) actionLabel.text = writeText;
+            if (actionButton != null) actionButton.interactable = true;
+        }
+
+        IEnumerator TypeLine(TMP_Text label, string prefix, string line)
+        {
+            if (label == null) yield break;
+            label.text = prefix + line;
+            label.ForceMeshUpdate();
+            for (int i = 1; i <= line.Length; i++)
+            {
+                label.maxVisibleCharacters = prefix.Length + i;
+                yield return new WaitForSecondsRealtime(charSeconds);
+            }
+            label.maxVisibleCharacters = 99999;
         }
 
         IEnumerator Write()

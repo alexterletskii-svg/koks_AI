@@ -35,10 +35,34 @@ namespace KoksUI
             if (roomButtons != null) foreach (var b in roomButtons) Prepare(b);
             Prepare(finishButton);
             Prepare(closeButton);
+            HardenRaycasts();
             if (finishButton != null) finishButton.onClick.AddListener(OnFinish);
             if (closeButton != null) closeButton.onClick.AddListener(OnClose);
             if (group != null) group.alpha = 0f;
             if (canvas != null) canvas.enabled = false;
+        }
+
+        // луч ловят только сами кнопки (одной целой областью, чуть шире видимой); всё остальное — фон, обложки, значки, тексты — луч не перехватывает
+        void HardenRaycasts()
+        {
+            var btns = new List<Button>();
+            if (roomButtons != null) btns.AddRange(roomButtons);
+            btns.Add(finishButton); btns.Add(closeButton);
+            var targets = new HashSet<Graphic>();
+            foreach (var b in btns)
+            {
+                if (b == null) continue;
+                var g = b.targetGraphic;
+                if (g == null) g = b.GetComponent<Graphic>();
+                if (g == null) { var im = b.gameObject.AddComponent<Image>(); im.color = new Color(1f, 1f, 1f, 0f); g = im; }
+                b.targetGraphic = g;
+                targets.Add(g);
+            }
+            foreach (var g in GetComponentsInChildren<Graphic>(true))
+            {
+                if (targets.Contains(g)) { g.raycastTarget = true; var im = g as Image; if (im != null) im.raycastPadding = new Vector4(-14f, -14f, -14f, -14f); }
+                else g.raycastTarget = false;
+            }
         }
 
         static void Prepare(Button b)
