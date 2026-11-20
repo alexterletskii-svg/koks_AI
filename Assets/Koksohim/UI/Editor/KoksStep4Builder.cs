@@ -107,11 +107,10 @@ namespace KoksUI.Editor
             m4.window = w4;
             EditorUtility.SetDirty(m4);
 
-            // ---- окно «запишите в журнал» (после газопроводов)
-            var journal = Info("CanvasJournal", circle4.position, heading, body, medium,
-                "Журнал", "Запишите результат в журнал",
-                "Газопроводы осмотрены. Результаты осмотра нужно зафиксировать в эксплуатационном журнале.",
-                "Что дальше", new[] { "Запишите результат осмотра", "Продолжайте осмотр оборудования" }, "Понятно");
+            // ---- журнал (после осмотра газопроводов): запись появляется по кнопке
+            var journal = KoksJournalBuilder.Create("CanvasJournal", circle4.position + new Vector3(0f, 1.5f, 0f), heading, body, medium);
+            journal.gameObject.SetActive(false);
+            EditorUtility.SetDirty(journal);
 
             // ---- итоговое окно + круг шага 5
             var circle5Tr = FindT("PointPosition_Step5");

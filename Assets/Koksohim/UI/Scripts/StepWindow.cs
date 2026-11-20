@@ -68,6 +68,12 @@ namespace KoksUI
         /// <summary>Сейчас на экране есть окно шага (маркеры осмотра в это время скрываются).</summary>
         public static bool AnyOpen { get { return openCount > 0; } }
 
+        /// <summary>Другое окно (журнал) сообщает, что оно открыто/закрыто — маркеры осмотра на это время скрываются.</summary>
+        public static void ExternalOpen(bool opened)
+        {
+            openCount = Mathf.Max(0, openCount + (opened ? 1 : -1));
+        }
+
         Coroutine fade;
         Coroutine autoTimer;
         Canvas canvas;
@@ -211,6 +217,13 @@ namespace KoksUI
             var cb = b.colors;
             cb.highlightedColor = new Color(1f, 0.87f, 0.45f, 1f);
             b.colors = cb;
+            // светлая подложка при наведении — тёплая, а не белая
+            var hover = b.transform.Find("Hover");
+            if (hover != null)
+            {
+                var hi = hover.GetComponent<Image>();
+                if (hi != null) hi.color = new Color(1f, 0.92f, 0.55f, 0.3f);
+            }
         }
 
         IEnumerator AutoConfirm()

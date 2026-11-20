@@ -4,14 +4,14 @@ namespace KoksUI
 {
     /// <summary>
     /// Показывает окно, когда осмотрены все точки одной группы
-    /// (например, после газопроводов — «Запишите результат в эксплуатационный журнал»). Один раз.
+    /// (например, после газопроводов — окно «Оперативный журнал»). Один раз.
     /// </summary>
     public class GroupCompleteWindow : MonoBehaviour
     {
         public InspectHud hud;
         [Tooltip("Название группы (поле Group у точек осмотра)")]
         public string group = "Газопроводы";
-        public StepWindow window;
+        public JournalWindow window;
 
         bool subscribed;
         bool shown;
