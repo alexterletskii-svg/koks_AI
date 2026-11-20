@@ -28,6 +28,10 @@ namespace KoksUI
         [Tooltip("Дверь выхода, на которую вешается журнал (ищется по имени door.003 / Door1)")]
         public Transform journalDoor;
         public Transform condensate;
+        [Tooltip("Точка, куда смотреть при осмотре конденсатоотводчика (пустой объект в яме). Если пусто — ищется объект ExamCondensateTarget")]
+        public Transform condensateTarget;
+        [Tooltip("Радиус зоны взгляда вокруг точки конденсатоотводчика, м")]
+        public float condensateRadius = 0.6f;
         public DrainValve drain;
         public JournalWindow journal;
         public ArrivalTrigger tunnelTrigger;
@@ -168,7 +172,7 @@ namespace KoksUI
                 int task = TaskOf(ip);
                 ip.enabled = false;
                 if (ip.marker != null) ip.marker.gameObject.SetActive(false);
-                if (task < 0) continue;
+                if (task < 0 || task == Condensate) continue;   // конденсатоотводчик считается взглядом (его коллайдер на весь тоннель)
                 var p = new Pt { ip = ip, task = task, isDrain = task == Drain };
                 p.xi = ip.GetComponent<XRSimpleInteractable>();
                 p.rends = ip.GetComponentsInChildren<Renderer>();
@@ -209,6 +213,11 @@ namespace KoksUI
                 foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                     if (t.name == "door.004") { door = t; break; }
 
+            if (condensateTarget == null)
+                foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    if (t.name == "ExamCondensateTarget") { condensateTarget = t; break; }
+            if (condensateTarget == null) Debug.LogWarning("[Exam] нет точки ExamCondensateTarget: конденсатоотводчик считается по всей модели. Создайте пустой объект ExamCondensateTarget в яме у конденсатоотводчика.");
+            else Debug.Log("[Exam] конденсатоотводчик: смотреть на точку " + condensateTarget.position);
             if (condensate == null)
                 foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                     if (t.name == "CondensateCollector") { condensate = t; break; }
@@ -334,6 +343,19 @@ namespace KoksUI
             return true;
         }
 
+        // взгляд на точку: она в центре поля зрения (с допуском на радиус), не дальше 5 м; решётки над ямой не мешают
+        static bool GazePoint(Vector3 point, float radius)
+        {
+            Camera cam = Camera.main;
+            if (cam == null) return false;
+            Transform c = cam.transform;
+            Vector3 to = point - c.position;
+            float dist = to.magnitude;
+            if (dist > 5f) return false;
+            float maxAngle = Mathf.Max(10f, Mathf.Atan2(radius, Mathf.Max(0.1f, dist)) * Mathf.Rad2Deg);
+            return Vector3.Angle(c.forward, to) <= maxAngle;
+        }
+
         static Bounds BoundsOf(Renderer[] rs, Vector3 fallback)
         {
             if (rs == null || rs.Length == 0) return new Bounds(fallback, Vector3.one * 0.3f);
@@ -430,10 +452,15 @@ namespace KoksUI
                 }
 
                 // конденсатоотводчик (CondensateCollector): как в обучении — посмотреть на него 3 секунды (или навести луч)
-                if (!done[Condensate] && condensate != null)
+                if (!done[Condensate] && (condensate != null || condensateTarget != null))
                 {
-                    Bounds cb = BoundsOf(condensate.GetComponentsInChildren<Renderer>(), condensate.position);
-                    bool look = GazeAt(condensate, cb) || RayAt(condensate, null, cb);
+                    bool look;
+                    if (condensateTarget != null) look = GazePoint(condensateTarget.position, condensateRadius);
+                    else
+                    {
+                        Bounds cb = BoundsOf(condensate.GetComponentsInChildren<Renderer>(), condensate.position);
+                        look = GazeAt(condensate, cb) || RayAt(condensate, null, cb);
+                    }
                     condHeld = look ? condHeld + dt : Mathf.Max(0f, condHeld - dt * 1.5f);
                     if (cand == null && condHeld > 0f) ring = Mathf.Max(ring, condHeld / condensateSeconds);
                     if (condHeld >= condensateSeconds) { done[Condensate] = true; Debug.Log("[Exam] конденсатоотводчик осмотрен"); }
