@@ -88,6 +88,17 @@ namespace KoksUI
 
         public void Begin() { Active = true; }
 
+        /// <summary>Осмотр возобновляется (точку нужно осмотреть ещё раз).</summary>
+        public void Reopen()
+        {
+            allFired = false;
+            current = null;
+            done = 0;
+            foreach (var x in points) if (x != null && x.Inspected) done++;
+            HideAll();
+            Refresh();
+        }
+
         public int Total { get { return points.Count; } }
         public int Done { get { return done; } }
 

@@ -228,6 +228,17 @@ namespace KoksUI
             marker.localScale = markerBase * k;
         }
 
+        /// <summary>Точку нужно осмотреть ещё раз (например, закрыть кран): новое название, прогресс и маркер сброшены.</summary>
+        public void ResetForRepeat(string newTitle, string newText)
+        {
+            Inspected = false;
+            held = 0f;
+            if (!string.IsNullOrEmpty(newTitle)) title = newTitle;
+            if (!string.IsNullOrEmpty(newText)) text = newText;
+            SetMarkerState();
+            if (hud != null) hud.Reopen();
+        }
+
         void Complete()
         {
             Inspected = true;

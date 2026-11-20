@@ -228,12 +228,16 @@ namespace KoksUI.Editor
             var w8 = Win("CanvasStep8", circle8.transform.position, heading, body, medium,
                 "Шаг 8", "Сточные линии газоподогревателя",
                 "Нужно проверить работоспособность сточных линий газоподогревателя.",
-                "Что проверить", new[] { "Откройте кран: наведите луч и держите", "Убедитесь, что вода идёт по линии", "Закройте кран после проверки" },
+                "Что проверить", new[] { "Откройте кран: наведите луч и держите", "Убедитесь, что вода идёт по линии", "Закройте кран сами: наведите луч и держите" },
                 "Приступить к осмотру", 0f);
             var done8 = Win("CanvasStep8Done", circle8.transform.position, heading, body, medium,
                 "Шаг 8 выполнен", "Кран закрыт",
-                "Сточная линия работает: вода шла, кран закрыт. Переходим к проверке конденсатоотводчика.",
+                "Вы закрыли кран: сточная линия проверена. Переходим к проверке конденсатоотводчика.",
                 "Что дальше", new[] { "Пройдите к синему кругу" }, "Понятно", 6f);
+            var close8 = Win("CanvasStep8Close", circle8.transform.position, heading, body, medium,
+                "Шаг 8", "Кран открыт, вода идёт",
+                "Сточная линия работает. Теперь закройте кран сами.",
+                "Что сделать", new[] { "Наведите луч на кран и держите", "Дождитесь, пока кран закроется" }, "Понятно", 0f);
             var m8 = circle8.GetComponent<StepMarker>();
             if (m8 == null) m8 = circle8.AddComponent<StepMarker>();
             m8.window = w8;
@@ -245,6 +249,7 @@ namespace KoksUI.Editor
             dv.hud = hud4;
             dv.valve = torus;
             dv.water = water;
+            dv.closeWindow = close8;
             dv.window = done8;
             dv.activateAfter = new[] { circle9 };
             EditorUtility.SetDirty(dv);
@@ -288,7 +293,7 @@ namespace KoksUI.Editor
             StepFlow flow = flowTr != null ? flowTr.GetComponent<StepFlow>() : new GameObject("StepFlow").AddComponent<StepFlow>();
             var hide = new List<GameObject>();
             if (flow.hideAtStart != null) hide.AddRange(flow.hideAtStart.Where(g => g != null));
-            foreach (var g in new[] { circle8, circle9, w6.gameObject, done6.gameObject, w8.gameObject, done8.gameObject, w9.gameObject, done9.gameObject, finish.gameObject })
+            foreach (var g in new[] { circle8, circle9, w6.gameObject, done6.gameObject, w8.gameObject, close8.gameObject, done8.gameObject, w9.gameObject, done9.gameObject, finish.gameObject })
                 if (!hide.Contains(g)) hide.Add(g);
             flow.hideAtStart = hide.ToArray();
             EditorUtility.SetDirty(flow);

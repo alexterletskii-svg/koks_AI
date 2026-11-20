@@ -26,6 +26,9 @@ namespace KoksUI.Editor
             // длинные записи — фон по кругу, короткие (до 30 с) — отдельные звуки поверх
             amb.playlist = clips.Where(c => c.length >= 30f).ToArray();
             amb.accents = clips.Where(c => c.length < 30f).ToArray();
+            var arr = Object.FindObjectsByType<ArrivalTrigger>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault();
+            amb.tunnelTrigger = arr;
+            if (arr == null) Debug.LogWarning("[Koks UI] Не найден TunnelArrival: фон будет тихим всё время. Запустите меню 'Прибытие в тоннель' и повторите.");
             EditorUtility.SetDirty(amb);
 
             var scene = go.scene;
