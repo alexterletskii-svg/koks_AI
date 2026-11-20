@@ -175,6 +175,13 @@ namespace KoksUI
                 pts.Add(p);
                 if (p.isDrain) drainPt = p;
             }
+            // какие детали входят в задания (для проверки в Console)
+            for (int t = 0; t < TaskNames.Length; t++)
+            {
+                var names = new List<string>();
+                foreach (var q in pts) if (q.task == t && !names.Contains(Key(q))) names.Add(Key(q));
+                if (names.Count > 0) Debug.Log("[Exam] " + TaskNames[t] + ": " + string.Join("; ", names));
+            }
 
             drain = drain != null ? drain : FindFirstObjectByType<DrainValve>(FindObjectsInactive.Include);
             if (drain != null) { drain.examMode = true; drain.closeWindow = null; drain.window = null; drain.activateAfter = null; }
@@ -254,19 +261,52 @@ namespace KoksUI
             }
         }
 
-        // луч любой руки проходит рядом с центром объекта и ничто крупное не заслоняет
-        bool RayNear(Bounds b)
+        // видимый луч руки: интерактор включён и его линия отображается
+        static bool RayVisible(XRRayInteractor r)
+        {
+            if (r == null || !r.isActiveAndEnabled) return false;
+            var lr = r.GetComponent<LineRenderer>();
+            if (lr != null && (!lr.enabled || !lr.gameObject.activeInHierarchy)) return false;
+            return true;
+        }
+
+        // первое попадание луча в сцену, не считая коллайдеров самого игрока (руки, тело)
+        static bool FirstHit(Transform origin, out RaycastHit first)
+        {
+            first = default(RaycastHit);
+            var hits = Physics.RaycastAll(origin.position, origin.forward, 15f, ~0, QueryTriggerInteraction.Ignore);
+            float best = float.MaxValue; bool any = false;
+            Transform rig = origin.root;
+            foreach (var h in hits)
+            {
+                if (h.collider == null || h.collider.transform.IsChildOf(rig)) continue;
+                if (h.distance < best) { best = h.distance; first = h; any = true; }
+            }
+            return any;
+        }
+
+        // луч наведён на объект: попал в его коллайдер, либо проходит рядом с ним и до него ничего не заслоняет (сетка/ограждение у самой детали не мешает)
+        bool RayAt(Transform root, Collider[] own, Bounds b)
         {
             RefreshRays();
-            float rad = Mathf.Clamp(b.extents.magnitude * 0.6f, 0.15f, 0.6f);
+            float rad = Mathf.Clamp(b.extents.magnitude * 0.5f, 0.12f, 0.45f);
             foreach (var r in rays)
             {
-                if (r == null || !r.isActiveAndEnabled) continue;
+                if (!RayVisible(r)) continue;
                 Transform t = r.rayOriginTransform != null ? r.rayOriginTransform : r.transform;
+                RaycastHit hit;
+                bool has = FirstHit(t, out hit);
+                if (has)
+                {
+                    Transform h = hit.collider.transform;
+                    if (h == root || h.IsChildOf(root)) return true;
+                    if (own != null) foreach (var c in own) if (c == hit.collider) return true;
+                }
                 Vector3 to = b.center - t.position;
                 float along = Vector3.Dot(to, t.forward);
                 if (along < 0.2f || along > 12f) continue;
-                if (Vector3.Cross(t.forward, to).magnitude > rad + along * 0.03f) continue;
+                if (Vector3.Cross(t.forward, to).magnitude > rad + along * 0.02f) continue;
+                if (has && hit.distance < along - b.extents.magnitude - 0.7f) continue;   // заслонено стеной/другим оборудованием
                 return true;
             }
             return false;
@@ -280,10 +320,24 @@ namespace KoksUI
             return b;
         }
 
+        static Bounds BoundsOf(Pt p)
+        {
+            bool any = false; Bounds b = new Bounds(p.ip.transform.position, Vector3.one * 0.3f);
+            if (p.xi != null)
+                foreach (var c in p.xi.colliders)
+                {
+                    if (c == null) continue;
+                    if (!any) { b = c.bounds; any = true; } else b.Encapsulate(c.bounds);
+                }
+            if (any) return b;
+            return BoundsOf(p.rends, p.ip.transform.position);
+        }
+
         bool IsAimed(Pt p)
         {
-            if (p.xi != null && p.xi.isHovered) return true;
-            return RayNear(BoundsOf(p.rends, p.ip.transform.position));
+            if (p.xi != null && p.xi.isHovered)
+                foreach (var r in rays ?? new XRRayInteractor[0]) if (RayVisible(r)) return true;
+            return RayAt(p.ip.transform, p.xi != null ? p.xi.colliders.ToArray() : null, BoundsOf(p));
         }
 
         // луч попал в объект (или в его дочерние) — для двери
@@ -301,7 +355,7 @@ namespace KoksUI
                     if (h == target || h.IsChildOf(target) || target.IsChildOf(h) && h != target.root) return true;
                 }
             }
-            return RayNear(BoundsOf(target.GetComponentsInChildren<Renderer>(), target.position));
+            return RayAt(target, null, BoundsOf(target.GetComponentsInChildren<Renderer>(), target.position));
         }
 
         // ------------------------------------------------------------------ цикл
@@ -353,18 +407,10 @@ namespace KoksUI
                     if (cand.held >= inspectSeconds) Complete(cand);
                 }
 
-                // конденсатоотводчик: смотреть на него 3 секунды
+                // конденсатоотводчик: держать на нём луч 3 секунды (взгляд без луча не считается)
                 if (!done[Condensate] && condensate != null)
                 {
-                    Camera cam = Camera.main;
-                    bool look = false;
-                    if (cam != null)
-                    {
-                        Bounds b = BoundsOf(condensate.GetComponentsInChildren<Renderer>(), condensate.position);
-                        Vector3 to = b.center - cam.transform.position;
-                        look = to.magnitude < 6f && Vector3.Angle(cam.transform.forward, to) < 15f;
-                    }
-                    if (!look) look = RayNear(BoundsOf(condensate.GetComponentsInChildren<Renderer>(), condensate.position));
+                    bool look = RayAt(condensate, null, BoundsOf(condensate.GetComponentsInChildren<Renderer>(), condensate.position));
                     condHeld = look ? condHeld + dt : Mathf.Max(0f, condHeld - dt * 1.5f);
                     if (cand == null && condHeld > 0f) ring = Mathf.Max(ring, condHeld / condensateSeconds);
                     if (condHeld >= condensateSeconds) { done[Condensate] = true; Debug.Log("[Exam] конденсатоотводчик осмотрен"); }
@@ -385,7 +431,15 @@ namespace KoksUI
                 return;
             }
             p.done = true;
+            // одна и та же деталь в нескольких местах сцены (например, опорные ролики) — достаточно осмотреть одну
+            foreach (var q in pts) if (!q.done && q.task == p.task && Key(q) == Key(p)) q.done = true;
             RecountTask(p.task);
+        }
+
+        static string Key(Pt p)
+        {
+            string t = (p.ip.title ?? "").Trim();
+            return p.task == 7 ? t : (p.ip.group ?? "") + "/" + t;   // ролики: «Опорный ролик» в двух группах — одна деталь
         }
 
         void RecountTask(int task)
