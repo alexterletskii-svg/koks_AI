@@ -18,6 +18,9 @@ namespace KoksUI
         public float minHeight = -0.5f;
         public float maxHeight = 3.0f;
 
+        [Tooltip("Что включить после «Приступить к осмотру» (например, следующий круг)")]
+        public GameObject[] activateOnConfirm;
+
         [Header("События")]
         public UnityEvent onEntered;
         [Tooltip("Игрок нажал «Приступить к осмотру» — сюда можно подключить дальнейшие действия")]
@@ -83,6 +86,8 @@ namespace KoksUI
         void OnConfirmed()
         {
             onConfirmed.Invoke();
+            if (activateOnConfirm != null)
+                foreach (var g in activateOnConfirm) if (g != null) g.SetActive(true);
             gameObject.SetActive(false); // круг гаснет
         }
 

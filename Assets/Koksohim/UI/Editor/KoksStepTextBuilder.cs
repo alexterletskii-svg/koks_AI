@@ -1,0 +1,150 @@
+using System.Linq;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+namespace KoksUI.Editor
+{
+    /// <summary>
+    /// Koks → Build UI → 11. Тексты шага 1, переход по лестнице и круг шага 3 (FirstScene).
+    /// Ничего не пересобирает: меняет тексты на месте и добавляет недостающее. Положение кругов не трогает.
+    /// </summary>
+    public static class KoksStepTextBuilder
+    {
+        [MenuItem("Koks/Build UI/11. Тексты шага 1, лестница и круг шага 3 (FirstScene)")]
+        public static void Build()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogError("[Koks UI] Остановите Play и запустите ещё раз.");
+                return;
+            }
+
+            var all = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var points = Object.FindObjectsByType<InspectPoint>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var circle1 = all.FirstOrDefault(t => t.name == "PointPosition" && t.parent == null);
+            var circle2 = all.FirstOrDefault(t => t.name == "PointPosition_Step2");
+            var hud = Object.FindFirstObjectByType<InspectHud>(FindObjectsInactive.Include);
+            if (circle1 == null || circle2 == null || hud == null)
+            {
+                Debug.LogError("[Koks UI] Нужны PointPosition, PointPosition_Step2 и осмотр клапанов. Сначала запустите меню 8 и 9.");
+                return;
+            }
+
+            KoksUIBuilder.PrepareAssets();
+            var heading = KoksUIBuilder.LoadFont("RobotoCondensed-ExtraBold");
+            var body = KoksUIBuilder.LoadFont("Inter-Regular");
+            var medium = KoksUIBuilder.LoadFont("Inter-Medium");
+            if (heading == null || body == null || medium == null)
+            {
+                Debug.LogError("[Koks UI] Нет шрифтов TMP.");
+                return;
+            }
+
+            // 1. тексты точек осмотра
+            int set = 0;
+            foreach (var d in KoksInspectBuilder.Defs)
+            {
+                var p = points.FirstOrDefault(x => x.name == d.obj);
+                if (p == null) { Debug.LogWarning("[Koks UI] Нет точки осмотра на объекте " + d.obj); continue; }
+                p.group = d.group;
+                p.title = d.title;
+                p.text = d.text;
+                EditorUtility.SetDirty(p);
+                set++;
+            }
+
+            // 2. окно шага 1 (у первого круга)
+            var m1 = circle1.GetComponent<StepMarker>();
+            if (m1 != null && m1.window != null)
+            {
+                var w = m1.window;
+                w.stepText = "Шаг 1";
+                w.title = "Газовоздушные клапаны";
+                w.description = "Вы у газовоздушных клапанов. Осмотрите оба клапана: наводите луч на отмеченные маркеры и держите 2 секунды.";
+                w.checksHeader = "Что проверить";
+                w.checks = new[]
+                {
+                    "Открытие клапанов (положение пластин)",
+                    "Положение штоков тарелок",
+                    "Целостность узлов клапанов"
+                };
+                w.buttonText = "Приступить к осмотру";
+                w.Apply();
+                EditorUtility.SetDirty(w);
+            }
+
+            // 3. окно у круга шага 2: подняться по лестнице
+            var m2 = circle2.GetComponent<StepMarker>();
+            if (m2 == null || m2.window == null)
+            {
+                Debug.LogError("[Koks UI] У PointPosition_Step2 нет Step Marker с окном. Запустите меню 9.");
+                return;
+            }
+            var w2 = m2.window;
+            w2.stepText = "Переход";
+            w2.title = "Поднимитесь по лестнице";
+            w2.description = "Клапаны осмотрены. Поднимитесь по лестнице к следующему шагу: синий круг ждёт вас наверху.";
+            w2.checksHeader = "Что дальше";
+            w2.checks = new[] { "Поднимитесь по лестнице", "Подойдите к синему кругу", "" };
+            w2.buttonText = "Понятно";
+            w2.Apply();
+            EditorUtility.SetDirty(w2);
+
+            // 4. круг шага 3 и его окно (позицию круга пользователь выставляет сам)
+            var circle3Tr = all.FirstOrDefault(t => t.name == "PointPosition_Step3");
+            GameObject circle3;
+            if (circle3Tr != null) circle3 = circle3Tr.gameObject;
+            else
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Koksohim/Prefabs/PointPosition.prefab");
+                if (prefab == null) { Debug.LogError("[Koks UI] Нет префаба PointPosition."); return; }
+                circle3 = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+                circle3.name = "PointPosition_Step3";
+                circle3.transform.position = circle2.position + new Vector3(2f, 0f, 0f);
+                circle3.transform.rotation = circle2.rotation;
+            }
+
+            var w3Tr = all.FirstOrDefault(t => t.name == "CanvasStep3" && t.parent == null);
+            StepWindow w3;
+            if (w3Tr != null && w3Tr.GetComponent<StepWindow>() != null) w3 = w3Tr.GetComponent<StepWindow>();
+            else
+            {
+                w3 = KoksStepBuilder.CreateWindow("CanvasStep3", circle3.transform.position + new Vector3(0f, 1.5f, 0f), heading, body, medium);
+                w3.stepText = "Шаг 3";
+                w3.title = "Следующее оборудование";
+                w3.description = "Здесь будет описание следующего оборудования и что в нём нужно осмотреть.";
+                w3.checksHeader = "Что проверить";
+                w3.buttonText = "Приступить к осмотру";
+                w3.Apply();
+                w3.gameObject.SetActive(false);
+                EditorUtility.SetDirty(w3);
+            }
+
+            var m3 = circle3.GetComponent<StepMarker>();
+            if (m3 == null) m3 = circle3.AddComponent<StepMarker>();
+            m3.window = w3;
+            EditorUtility.SetDirty(m3);
+
+            // круг шага 2 включает круг шага 3 после «Понятно»
+            m2.activateOnConfirm = new[] { circle3 };
+            EditorUtility.SetDirty(m2);
+
+            // 5. страховка: всё последующее скрыто при старте
+            var flowTr = all.FirstOrDefault(t => t.name == "StepFlow" && t.parent == null);
+            StepFlow flow = flowTr != null ? flowTr.GetComponent<StepFlow>() : null;
+            if (flow == null) flow = new GameObject("StepFlow").AddComponent<StepFlow>();
+            flow.hideAtStart = new[] { circle3, circle2.gameObject, w3.gameObject, w2.gameObject };
+            EditorUtility.SetDirty(flow);
+
+            circle3.SetActive(false);
+
+            Selection.activeGameObject = circle3;
+            var scene = hud.gameObject.scene;
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[Koks UI] Тексты точек: " + set + " из " + KoksInspectBuilder.Defs.Length +
+                      ". Круг шага 3: PointPosition_Step3 (" + circle3.transform.position + ") — передвиньте, куда нужно (включите галочку, переставьте, снимите).");
+        }
+    }
+}

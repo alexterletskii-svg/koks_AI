@@ -12,22 +12,26 @@ namespace KoksUI.Editor
     /// <summary>Koks → Build UI → 8. Собрать осмотр клапанов (FirstScene).</summary>
     public static class KoksInspectBuilder
     {
-        struct Def
+        internal struct Def
         {
-            public string obj, group, title;
-            public Def(string o, string g, string t) { obj = o; group = g; title = t; }
+            public string obj, group, title, text;
+            public Def(string o, string g, string t, string x) { obj = o; group = g; title = t; text = x; }
         }
 
-        static readonly Def[] Defs =
+        internal const string TextOpening = "Произвести осмотр открытия газовоздушных клапанов (положения пластин).";
+        internal const string TextRods = "Произвести осмотр положения штоков тарелок газовоздушного клапана.";
+        internal const string TextIntegrity = "Произвести осмотр целостности узлов газовоздушных клапанов.";
+
+        internal static readonly Def[] Defs =
         {
-            new Def("Cylinder.095", "Клапан 1", "Крышка"),
-            new Def("Cylinder.105", "Клапан 1", "Внутренности"),
-            new Def("Cylinder.001", "Клапан 1", "Тяга"),
-            new Def("Cylinder.094", "Клапан 1", "Цепочка"),
-            new Def("Zaslonka2.003", "Клапан 2", "Крышка"),
-            new Def("Cylinder.004", "Клапан 2", "Внутренности"),
-            new Def("Cylinder.078", "Клапан 2", "Тяга"),
-            new Def("Cylinder.005", "Клапан 2", "Цепочка"),
+            new Def("Cylinder.095", "Клапан 1", "Крышка", TextOpening),
+            new Def("Cylinder.105", "Клапан 1", "Тарелка", TextOpening),
+            new Def("Cylinder.094", "Клапан 1", "Шток тарелки", TextRods),
+            new Def("Cylinder.001", "Клапан 1", "Узлы клапана", TextIntegrity),
+            new Def("Zaslonka2.003", "Клапан 2", "Крышка", TextOpening),
+            new Def("Cylinder.004", "Клапан 2", "Тарелка", TextOpening),
+            new Def("Cylinder.005", "Клапан 2", "Шток тарелки", TextRods),
+            new Def("Cylinder.078", "Клапан 2", "Узлы клапана", TextIntegrity),
         };
 
         const float PW = 520f, PH = 150f;   // окно с кольцом
@@ -101,6 +105,7 @@ namespace KoksUI.Editor
                 var p = go.AddComponent<InspectPoint>();
                 p.group = Defs[i].group;
                 p.title = Defs[i].title;
+                p.text = Defs[i].text;
                 p.hud = hud;
                 BuildMarker(markersRoot.transform, "InspectMarker_" + Defs[i].group + "_" + Defs[i].title, p);
                 points.Add(p);
