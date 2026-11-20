@@ -131,6 +131,8 @@ namespace KoksUI
 
         static UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor[] rays;
         static float raysTime = -100f;
+        Transform lastRay;
+        float nextBlockLog;
 
         // луч (любой руки) проходит рядом с ромбиком: допуск растёт с расстоянием, чтобы попадать было несложно
         bool AimedAt()
@@ -151,7 +153,7 @@ namespace KoksUI
                 float along = Vector3.Dot(to, t.forward);
                 if (along < 0.2f || along > 15f) continue;
                 float off = Vector3.Cross(t.forward, to).magnitude;
-                if (off <= radius + along * 0.03f) return true;
+                if (off <= radius + along * 0.03f) { lastRay = t; return true; }
             }
             return false;
         }
@@ -179,7 +181,21 @@ namespace KoksUI
             if (hud == null || (hud.Active && !(hud.AllDone && InspectHud.OtherRunning(hud))))
             {
                 want = interactable != null && interactable.isHovered;
-                if (!want && aimAtMarker && hud != null && !hud.AllDone) want = AimedAt();
+                if (!want && aimAtMarker && hud != null && !hud.AllDone)
+                {
+                    want = AimedAt();
+                    // диагностика: луч у ромбика, а деталь он не касается — пишем, что стоит на пути
+                    if (want && debugLog && lastRay != null && Time.unscaledTime > nextBlockLog)
+                    {
+                        nextBlockLog = Time.unscaledTime + 4f;
+                        RaycastHit hit;
+                        if (Physics.Raycast(lastRay.position, lastRay.forward, out hit, 30f, ~0, QueryTriggerInteraction.Ignore))
+                            Debug.Log("[Inspect] " + name + ": луч у ромбика, но первым упирается в «" + hit.collider.name + "»" +
+                                      (hit.collider.transform.parent != null ? " (в " + hit.collider.transform.parent.name + ")" : "") +
+                                      ", слой " + LayerMask.LayerToName(hit.collider.gameObject.layer) + ", " + hit.distance.ToString("0.0") + " м");
+                        else Debug.Log("[Inspect] " + name + ": луч у ромбика, но коллайдеров на пути нет");
+                    }
+                }
             }
             if (want && !hovered) EnterHover();
             else if (!want && hovered) ExitHover();
