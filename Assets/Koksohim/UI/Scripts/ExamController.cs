@@ -138,6 +138,10 @@ namespace KoksUI
                 m.gameObject.SetActive(false);
             }
 
+            // остальные круги-указатели обучения (в комнате и т.п.): всё, что названо PointPosition*
+            foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (t.name.StartsWith("PointPosition")) t.gameObject.SetActive(false);
+
             // точки осмотра: ромбики и карточки обучения выключены, считаем осмотр сами
             foreach (var ip in FindObjectsByType<InspectPoint>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {

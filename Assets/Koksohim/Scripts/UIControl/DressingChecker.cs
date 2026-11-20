@@ -38,6 +38,9 @@ public class DressingChecker : MonoBehaviour
         if (KoksUI.ExamMode.Active)
         {
             KoksUI.ExamMode.PpeChecked = true;
+            KoksUI.ExamMode.GasAnalyzerOn = false;
+            foreach (var it in allItems)
+                if (it != null && it.IsOn && it.name.IndexOf("GasAnalyzer", System.StringComparison.OrdinalIgnoreCase) >= 0) KoksUI.ExamMode.GasAnalyzerOn = true;
             KoksUI.ExamMode.PpeOk = correctOn == correctTotal && wrongOn == 0;
             checkButton.interactable = false;
             if (nextButton != null) nextButton.onClick.Invoke();

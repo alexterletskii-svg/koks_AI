@@ -49,6 +49,9 @@ namespace KoksUI
 
         void Update()
         {
+            // экзамен: газоанализатор не выбран в СИЗ — не пищит
+            if (ExamMode.Active && !ExamMode.GasAnalyzerOn) { if (src != null) src.volume = 0f; return; }
+
             float target = 0f;
             if (inTunnel)
             {

@@ -11,7 +11,7 @@ namespace KoksUI
         public static bool Active;
 
         // результат выбора СИЗ в экзамене (заполняет DressingChecker, показывается в итоговом окне)
-        public static bool PpeChecked, PpeOk;
-        public static void ResetPpe() { PpeChecked = false; PpeOk = false; }
+        public static bool PpeChecked, PpeOk, GasAnalyzerOn;
+        public static void ResetPpe() { PpeChecked = false; PpeOk = false; GasAnalyzerOn = false; }
     }
 }
