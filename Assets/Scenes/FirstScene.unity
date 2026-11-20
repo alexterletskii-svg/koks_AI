@@ -60151,6 +60151,11 @@ MonoBehaviour:
   onConfirmed:
     m_PersistentCalls:
       m_Calls: []
+--- !u!4 &1017316165 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1435134692355208112, guid: f5de784c783c1d14994cc2c92993f337, type: 3}
+  m_PrefabInstance: {fileID: 1017316162}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1018246161
 GameObject:
   m_ObjectHideFlags: 0
@@ -60440,7 +60445,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4290162340
   m_fontColor: {r: 0.6431373, g: 0.68235296, b: 0.7137255, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -60453,7 +60458,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -105607,7 +105612,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4278240511
   m_fontColor: {r: 1, g: 0.76862746, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -105620,7 +105625,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -124621,6 +124626,65 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: c76479d5aaa06984f9dc5eb988da96d0, type: 3}
   m_PrefabInstance: {fileID: 2026630918}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2028525197
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2028525199}
+  - component: {fileID: 2028525198}
+  m_Layer: 0
+  m_Name: GasAnalyzerBeep
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2028525198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2028525197}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3874c1f84c322e49a524e055cc07836, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KoksUI.GasAnalyzerBeep
+  clips:
+  - {fileID: 8300000, guid: 6b638d3f669e59f4b906499aa9a301f6, type: 3}
+  - {fileID: 8300000, guid: a01734a1bee8e564d9897f4dc78549e5, type: 3}
+  tunnelTrigger: {fileID: 684007257}
+  valvesPoint: {fileID: 1017316165}
+  tunnelVolume: 0.025
+  valvesVolume: 0.1
+  farDistance: 10
+  nearDistance: 2.5
+  rampSeconds: 2
+  gapSeconds: {x: 3, y: 9}
+  gapScaleAtValves: 0.35
+  clipGain: {x: 0.4, y: 1}
+  breathDepth: 0.5
+  breathSpeed: 0.15
+--- !u!4 &2028525199
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2028525197}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2032947285
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -130846,3 +130910,4 @@ SceneRoots:
   - {fileID: 1769217440}
   - {fileID: 1708644249}
   - {fileID: 1526239521}
+  - {fileID: 2028525199}
