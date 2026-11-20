@@ -371,7 +371,8 @@ namespace KoksUI.Editor
                  TextAlignmentOptions.Center, 0, 0, 260, 84);
             AddHover(back.transform, Spr("btn_outline"), new Color(1f, 0.769f, 0f, 0.35f), new Color(1f, 0.769f, 0f, 1f), false);
             AddSetActive(backBtn, panel.gameObject, false);
-            AddSetActive(backBtn, tutorial.gameObject, true);
+            var modePanel = panel.parent.Find("PanelMode");
+            AddSetActive(backBtn, (modePanel != null ? modePanel : tutorial).gameObject, true);
 
             string[] names = { "ButtonTop", "ButtonTop (1)", "ButtonTop (2)" };
             string[] icons = { "icon_search", "icon_flame", "icon_box" };
@@ -556,6 +557,174 @@ namespace KoksUI.Editor
             Style(t, font, size, color, align, false, 0f, 0f);
             t.raycastTarget = false;
             return t;
+        }
+
+        // ------------------------------------------------- Выбор режима
+
+        [MenuItem("Koks/Build UI/12. Окно «Выберите режим» (MenuScene)")]
+        public static void BuildModePanel()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogError("[Koks UI] Остановите Play и запустите ещё раз.");
+                return;
+            }
+
+            KoksUIBuilder.PrepareAssets();
+            heading = Font("RobotoCondensed-ExtraBold");
+            body = Font("Inter-Regular");
+            medium = Font("Inter-Medium");
+            if (heading == null || body == null || medium == null)
+            {
+                Debug.LogError("[Koks UI] Нет шрифтов TMP. Запустите пункт 1.");
+                return;
+            }
+
+            Canvas canvas = null;
+            foreach (var c in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (c.gameObject.name == "CanvasMenu") { canvas = c; break; }
+            if (canvas == null) { Debug.LogError("[Koks UI] В открытой сцене нет CanvasMenu. Откройте MenuScene."); return; }
+
+            Transform tutorial = canvas.transform.Find("PanelTutorial");
+            Transform select = canvas.transform.Find("PanelSelect");
+            if (tutorial == null || select == null) { Debug.LogError("[Koks UI] Не найдены PanelTutorial / PanelSelect."); return; }
+
+            // панель режима: тот же размер и положение, что у окна сценариев
+            Clean(canvas.transform, "PanelMode");
+            var go = new GameObject("PanelMode", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            go.transform.SetParent(canvas.transform, false);
+            var rt = (RectTransform)go.transform;
+            var sr = (RectTransform)select;
+            rt.anchorMin = sr.anchorMin; rt.anchorMax = sr.anchorMax; rt.pivot = sr.pivot;
+            rt.anchoredPosition = sr.anchoredPosition; rt.sizeDelta = sr.sizeDelta;
+            rt.localScale = sr.localScale; rt.localRotation = sr.localRotation;
+            go.transform.SetSiblingIndex(select.GetSiblingIndex());
+            var panel = go.transform;
+            StylePanel(panel);
+
+            EnsureText(panel, "KoksTitle", "Выберите режим", heading, 64f, Color.white,
+                       TextAlignmentOptions.MidlineLeft, -300f, 420f, 1000f, 90f).raycastTarget = false;
+            EnsureText(panel, "KoksSubtitle", "Как вы хотите пройти сценарий?", body, 30f, Mute,
+                       TextAlignmentOptions.MidlineLeft, -300f, 345f, 1000f, 50f).raycastTarget = false;
+            EnsureText(panel, "KoksHint", "Наведите луч на карточку и нажмите триггер", body, 26f, Mute,
+                       TextAlignmentOptions.Center, 0f, -440f, 1600f, 44f).raycastTarget = false;
+
+            // «Назад» -> экран с управлением
+            var back = KImg(panel, "KoksBack", Spr("btn_outline"), Color.white, 1520f, 24f, 260f, 84f, Image.Type.Sliced);
+            ((RectTransform)back.transform).anchorMin = ((RectTransform)back.transform).anchorMax = new Vector2(0f, 1f);
+            back.raycastTarget = true;
+            var backBtn = back.gameObject.AddComponent<Button>();
+            backBtn.targetGraphic = back;
+            var bcb = ColorBlock.defaultColorBlock;
+            bcb.normalColor = new Color(1f, 1f, 1f, 0.55f);
+            bcb.highlightedColor = Color.white;
+            bcb.selectedColor = new Color(1f, 1f, 1f, 0.55f);
+            bcb.pressedColor = Hex("FFC400");
+            bcb.fadeDuration = 0.08f;
+            backBtn.colors = bcb;
+            KTxt(back.transform, "KoksBackText", "Назад", heading, 34f, Color.white, TextAlignmentOptions.Center, 0, 0, 260, 84);
+            AddHover(back.transform, Spr("btn_outline"), new Color(1f, 0.769f, 0f, 0.35f), new Color(1f, 0.769f, 0f, 1f), false);
+            AddSetActive(backBtn, panel.gameObject, false);
+            AddSetActive(backBtn, tutorial.gameObject, true);
+
+            // две карточки
+            const float CW = 760f, CH = 640f;
+            string[] names = { "ModeLearn", "ModeExam" };
+            string[] titles = { "Обучение", "Экзамен" };
+            string[] descs =
+            {
+                "Осмотр с подсказками: маркеры, карточки и пояснения на каждом шаге.",
+                "Самостоятельное прохождение без подсказок, с итоговой оценкой."
+            };
+            string[] icons = { "icon_mode_learn", "icon_mode_exam" };
+            for (int i = 0; i < 2; i++)
+            {
+                bool ready = i == 0;
+                var cgo = new GameObject(names[i], typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+                cgo.transform.SetParent(panel, false);
+                var card = cgo.transform;
+                SetRect((RectTransform)card, (i == 0 ? -400f : 400f), -50f, CW, CH);
+                var img = cgo.GetComponent<Image>();
+                img.sprite = Spr("chip");
+                img.type = Image.Type.Sliced;
+                img.color = Color.white;
+                var btn = cgo.GetComponent<Button>();
+                var cb = ColorBlock.defaultColorBlock;
+                cb.normalColor = Card;
+                cb.highlightedColor = Hex("2B343C");
+                cb.selectedColor = Card;
+                cb.pressedColor = Hex("3A3520");
+                cb.disabledColor = Hex("1E252B", 0.6f);
+                cb.colorMultiplier = 1f;
+                cb.fadeDuration = 0.08f;
+                btn.transition = Selectable.Transition.ColorTint;
+                btn.targetGraphic = img;
+                btn.colors = cb;
+
+                Color accent = ready ? Heat : Hex("5A656D");
+                KImg(card, "KoksCover", null, Hex("161C21"), 0, 0, CW, 230, Image.Type.Simple);
+                KImg(card, "KoksStripes", Spr("stripes_tile"), Color.white, 0, 0, CW, 230, Image.Type.Tiled);
+                KImg(card, "KoksIcon", Spr(icons[i]), accent, (CW - 130f) / 2f, 50f, 130f, 130f, Image.Type.Simple);
+
+                var tag = KImg(card, "KoksTag", Spr("chip"), new Color(0.078f, 0.094f, 0.11f, 1f), 18, 18, 160, 42, Image.Type.Sliced);
+                KImg(tag.transform, "KoksDot", Spr("dot"), ready ? Hex("4BD37B") : Hex("5A656D"), 14, 12, 18, 18, Image.Type.Simple);
+                KTxt(tag.transform, "KoksTagText", ready ? "Доступен" : "Скоро", medium, 24f, Color.white,
+                     TextAlignmentOptions.MidlineLeft, 40, 0, 116, 42);
+
+                KTxt(card, "KoksTitle", titles[i], heading, 46f, ready ? Color.white : Mute,
+                     TextAlignmentOptions.MidlineLeft, 28, 250, CW - 56f, 64);
+                var d = KTxt(card, "KoksDesc", descs[i], body, 28f, ready ? Ink : Mute,
+                             TextAlignmentOptions.TopLeft, 28, 322, CW - 56f, 160);
+                d.textWrappingMode = TextWrappingModes.Normal;
+
+                var action = KImg(card, "KoksAction", Spr(ready ? "btn_heat" : "btn_outline"),
+                                  ready ? Heat : new Color(1f, 1f, 1f, 0.25f), 28, 528, CW - 56f, 84, Image.Type.Sliced);
+                KTxt(action.transform, "KoksActionText", ready ? "Выбрать" : "Скоро", heading, 34f,
+                     ready ? Dark : Mute, TextAlignmentOptions.Center, 0, 0, CW - 56f, 84);
+
+                AddHover(card, Spr("chip"), new Color(1f, 1f, 1f, 0.07f), Heat, true);
+                var frame = KImg(card, "KoksFrame", Spr("card"), new Color(1f, 1f, 1f, ready ? 0.3f : 0.12f), 0, 0, CW, CH, Image.Type.Sliced);
+                frame.transform.SetAsLastSibling();
+
+                if (ready)
+                {
+                    AddSetActive(btn, panel.gameObject, false);   // «Обучение»: дальше окно сценариев, как раньше
+                    AddSetActive(btn, select.gameObject, true);
+                }
+            }
+            DisableRaycasts(panel);
+            go.SetActive(false);
+
+            // порядок: управление -> режим -> сценарии
+            Button tutBtn = null;
+            foreach (var b in tutorial.GetComponentsInChildren<Button>(true)) { tutBtn = b; break; }
+            if (tutBtn != null) Reopen(tutBtn, select.gameObject, panel.gameObject);
+            else Debug.LogWarning("[Koks UI] Не найдена кнопка на экране управления.");
+            var selBack = select.Find("KoksBack");
+            if (selBack != null && selBack.GetComponent<Button>() != null)
+                Reopen(selBack.GetComponent<Button>(), tutorial.gameObject, panel.gameObject);
+            else Debug.LogWarning("[Koks UI] В окне сценариев нет KoksBack — запустите пункт 4.");
+
+            EditorSceneManager.MarkSceneDirty(canvas.gameObject.scene);
+            EditorSceneManager.SaveScene(canvas.gameObject.scene);
+            Debug.Log("[Koks UI] Окно «Выберите режим» готово: Управление → Режим → Сценарии.");
+        }
+
+        // у кнопки вызов «включить A» заменяется на «включить B» (старые и потерянные ссылки убираются)
+        static void Reopen(Button btn, GameObject was, GameObject now)
+        {
+            var so = new SerializedObject(btn);
+            var calls = so.FindProperty("m_OnClick.m_PersistentCalls.m_Calls");
+            for (int k = calls.arraySize - 1; k >= 0; k--)
+            {
+                var e = calls.GetArrayElementAtIndex(k);
+                if (e.FindPropertyRelative("m_MethodName").stringValue != "SetActive") continue;
+                if (!e.FindPropertyRelative("m_Arguments.m_BoolArgument").boolValue) continue;
+                var t = e.FindPropertyRelative("m_Target").objectReferenceValue;
+                if (t == null || t == was || t == now) calls.DeleteArrayElementAtIndex(k);
+            }
+            so.ApplyModifiedProperties();
+            AddSetActive(btn, now, true);
         }
 
         // --------------------------------------------------- Результат
