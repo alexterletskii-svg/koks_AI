@@ -207,6 +207,7 @@ namespace KoksUI
             if (started) return;
             started = true;
             startTime = Time.time;
+            if (journalIcon != null) journalIcon.PlaceAtEntrance();
             Debug.Log("[Exam] экзамен начался (вход в тоннель)");
         }
 

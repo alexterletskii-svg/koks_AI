@@ -49,7 +49,7 @@ namespace KoksUI.Editor
             // ---- значок «Журнал»
             var journal = Object.FindFirstObjectByType<JournalWindow>(FindObjectsInactive.Include);
             if (journal == null) Debug.LogWarning("[Koks UI] В сцене нет JournalWindow: значок журнала ничего не откроет (запустите меню журнала).");
-            var jr = NewCanvas("CanvasExamJournal", 170, 190, 0.0006f, true);
+            var jr = NewCanvas("CanvasExamJournal", 170, 190, 0.0012f, true);
             var jbg = KoksUIBuilder.Img("Bg", jr.transform, KoksUIBuilder.Spr("panel_fill"), KoksUIBuilder.Hex("14191E", 0.95f), 0, 0, 170, 190);
             jbg.raycastTarget = true;
             KoksUIBuilder.Img("Frame", jr.transform, KoksUIBuilder.Spr("panel_frame"), KoksUIBuilder.Heat, 0, 0, 170, 190);
