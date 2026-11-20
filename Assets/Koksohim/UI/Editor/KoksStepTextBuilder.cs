@@ -106,6 +106,7 @@ namespace KoksUI.Editor
             EditorUtility.SetDirty(w2);
 
             // 4. круг шага 3 и его окно (позицию круга пользователь выставляет сам)
+            all = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             var circle3Tr = all.FirstOrDefault(t => t.name == "PointPosition_Step3");
             GameObject circle3;
             if (circle3Tr != null) circle3 = circle3Tr.gameObject;
@@ -149,6 +150,7 @@ namespace KoksUI.Editor
             m3.window = w3;
             EditorUtility.SetDirty(m3);
 
+            all = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             // круг шага 4 и его окно-заглушка (позицию круга пользователь выставляет сам)
             var circle4Tr = all.FirstOrDefault(t => t.name == "PointPosition_Step4");
             GameObject circle4;
