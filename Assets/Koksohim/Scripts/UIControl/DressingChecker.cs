@@ -34,6 +34,16 @@ public class DressingChecker : MonoBehaviour
             }
         }
 
+        // Экзамен: верно/неверно не показываем, итог попадёт в общее окно в конце экзамена
+        if (KoksUI.ExamMode.Active)
+        {
+            KoksUI.ExamMode.PpeChecked = true;
+            KoksUI.ExamMode.PpeOk = correctOn == correctTotal && wrongOn == 0;
+            checkButton.interactable = false;
+            if (nextButton != null) nextButton.onClick.Invoke();
+            return;
+        }
+
         // Все правильные надеты и ни одного неправильного?
         if (correctOn == correctTotal && wrongOn == 0)
         {

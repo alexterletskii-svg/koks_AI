@@ -62,6 +62,7 @@ namespace KoksUI
 
         public static readonly string[] TaskNames =
         {
+            "Выбор средств индивидуальной защиты",
             "Осмотр газовоздушных клапанов",
             "Осмотр кантовочных кранов",
             "Крышки устройства обезграфичивания",
@@ -72,7 +73,7 @@ namespace KoksUI
             "Сточная линия: открыть и закрыть кран",
             "Осмотр конденсатоотводчика"
         };
-        const int Journal = 4, Drain = 7, Condensate = 8, GasPipe = 3;
+        const int Ppe = 0, Journal = 5, Drain = 8, Condensate = 9, GasPipe = 4;
 
         class Pt
         {
@@ -98,11 +99,11 @@ namespace KoksUI
         static int TaskOf(InspectPoint p)
         {
             string g = p.group ?? "", t = p.title ?? "";
-            if (g.StartsWith("Клапан")) return 0;
-            if (g == "Кантовочные краны") return 1;
-            if (g == "Обезграфичивание") return 2;
+            if (g.StartsWith("Клапан")) return 1;
+            if (g == "Кантовочные краны") return 2;
+            if (g == "Обезграфичивание") return 3;
             if (g == "Газопроводы") return GasPipe;
-            if (g == "Кантовочный механизм") return t == "Опорный ролик" ? 6 : 5;
+            if (g == "Кантовочный механизм") return t == "Опорный ролик" ? 7 : 6;
             if (g == "Сточные линии") return Drain;
             return -1;
         }
@@ -110,8 +111,9 @@ namespace KoksUI
         void Awake()
         {
             if (forceExam) ExamMode.Active = true;
-            if (!ExamMode.Active) { enabled = false; return; }
+            if (!ExamMode.Active) { Debug.Log("[Exam] режим обучения (ExamMode.Active=false). Для экзамена запускайте из MenuScene или включите forceExam."); enabled = false; return; }
             Debug.Log("[Exam] режим экзамена включён");
+            done[Ppe] = ExamMode.PpeChecked && ExamMode.PpeOk;
 
             // вводное окно и окно входа в тоннель — тексты экзамена (до того, как окна применят свои тексты)
             var intro = FindFirstObjectByType<IntroWindow>(FindObjectsInactive.Include);

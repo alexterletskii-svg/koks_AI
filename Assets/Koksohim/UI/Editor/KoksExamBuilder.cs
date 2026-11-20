@@ -63,7 +63,7 @@ namespace KoksUI.Editor
             jicon.journal = journal;
 
             // ---- итоговое окно
-            const float W = 700f, H = 790f;
+            const float W = 700f, H = 298f + ExamController.TaskNames.Length * 40f + 16f + 84f + 32f;
             var rg = NewCanvas("CanvasExamResult", W, H, 0.001f, true);
             var rt = rg.transform;
             KoksUIBuilder.Img("PanelFill", rt, KoksUIBuilder.Spr("panel_fill"), KoksUIBuilder.Hex("14191E", 0.96f), 0, 0, W, H);
