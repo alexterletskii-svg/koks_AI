@@ -12,10 +12,10 @@ namespace KoksUI.Editor
     /// </summary>
     public static class KoksIntroGasInfoBuilder
     {
-        const float Extra = 170f;
+        const float Extra = 210f;   // на сколько окно выше базового
         const string IconPath = "Assets/Koksohim/Sprites/ScrollBarContent/GasAnalyzer.png";
         const string Title = "Газоанализатор";
-        const string Info = "Газоанализатор на груди сигнализирует об опасных газах в воздухе, в том числе об угарном газе (СО). Частый и громкий сигнал означает повышенную концентрацию: прекратите осмотр и покиньте зону.";
+        const string Info = "Газоанализатор на груди сигнализирует об опасных газах в воздухе, в том числе об угарном газе (СО). Частый громкий сигнал — повышенная концентрация: прекратите осмотр и покиньте зону.";
 
         static RectTransform FindRoot(string name)
         {
@@ -29,8 +29,10 @@ namespace KoksUI.Editor
         {
             var old = rt.Find("GasInfo");
             if (old == null) return;
+            float h = ((RectTransform)old).sizeDelta.y;
+            float extra = h < 400f ? h : 170f;
             Object.DestroyImmediate(old.gameObject);
-            Resize(rt, -Extra, moveBack);
+            Resize(rt, -extra, moveBack);
         }
 
         static void Resize(RectTransform rt, float dy, string[] moved)
@@ -70,7 +72,7 @@ namespace KoksUI.Editor
                 if (g != null)
                 {
                     Object.DestroyImmediate(g.gameObject);
-                    Resize(intro, -Extra, new[] { "ProgressTrack", "ProgressFill" });
+                    Resize(intro, -170f, new[] { "ProgressTrack", "ProgressFill" });
                 }
             }
 
@@ -86,12 +88,12 @@ namespace KoksUI.Editor
             Resize(rt, Extra, moved);
             float H = rt.sizeDelta.y;
 
-            var block = KoksUIBuilder.R("GasInfo", rt, 0, 0, W, H);
+            var block = KoksUIBuilder.R("GasInfo", rt, 0, 0, W, Extra);
             KoksUIBuilder.Img("Divider", block, null, new Color(1f, 1f, 1f, 0.16f), 28, y0, W - 56f, 2);
             var im = KoksUIBuilder.Img("Icon", block, icon, Color.white, 28, y0 + 24f, 96, 96, Image.Type.Simple);
             im.preserveAspect = true;
-            KoksUIBuilder.Txt("InfoTitle", block, Title, medium, 26, KoksUIBuilder.Heat, TextAlignmentOptions.TopLeft, 144, y0 + 16f, W - 172f, 34);
-            KoksUIBuilder.Txt("InfoText", block, Info, body, 22, KoksUIBuilder.Mute, TextAlignmentOptions.TopLeft, 144, y0 + 52f, W - 172f, 110, true);
+            KoksUIBuilder.Txt("InfoTitle", block, Title, medium, 26, KoksUIBuilder.Heat, TextAlignmentOptions.TopLeft, 144, y0 + 14f, W - 172f, 34);
+            KoksUIBuilder.Txt("InfoText", block, Info, body, 21, KoksUIBuilder.Mute, TextAlignmentOptions.TopLeft, 144, y0 + 48f, W - 172f, 150, true);
             block.SetSiblingIndex(rt.childCount - 1);
 
             EditorUtility.SetDirty(rt.gameObject);
