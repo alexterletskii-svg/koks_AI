@@ -41,6 +41,16 @@ namespace KoksUI
         public GameObject markerCenter;
         public GameObject markerCheck;
 
+        /// <summary>Маркер виден сквозь предметы (включается, когда осталось 1–3 точки: чтобы их было не потерять).</summary>
+        public void SetSeeThrough(bool on)
+        {
+            if (marker == null || seeThrough == on) return;
+            seeThrough = on;
+            foreach (var g in marker.GetComponentsInChildren<Graphic>(true))
+                g.material = on ? UIDepth.MarkerOverlayMaterial : UIDepth.MarkerMaterial;
+        }
+        bool seeThrough;
+
         public bool Inspected { get; private set; }
         public Vector3 MarkerPosition { get; private set; }
 
@@ -173,7 +183,7 @@ namespace KoksUI
             Camera cam = Camera.main;
             UpdateMarkerPosition();
             if (cam != null) marker.rotation = cam.transform.rotation;
-            float k = Inspected ? 0.8f : 1f + 0.12f * Mathf.Sin(Time.time * 4f);
+            float k = Inspected ? 0.8f : (seeThrough ? 1.5f : 1f) * (1f + 0.12f * Mathf.Sin(Time.time * 4f));
             marker.localScale = markerBase * k;
         }
 

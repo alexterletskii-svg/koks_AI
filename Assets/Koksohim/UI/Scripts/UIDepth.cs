@@ -48,6 +48,21 @@ namespace KoksUI
             }
         }
 
+        static Material markerOverlay;
+        /// <summary>Маркер поверх геометрии (для последних неосмотренных точек).</summary>
+        public static Material MarkerOverlayMaterial
+        {
+            get
+            {
+                if (markerOverlay == null)
+                {
+                    markerOverlay = new Material(ImageMaterial);
+                    markerOverlay.renderQueue = 3500;
+                }
+                return markerOverlay;
+            }
+        }
+
         public static void AlwaysOnTop(GameObject root)
         {
             if (overlayText == null) overlayText = Shader.Find("TextMeshPro/Distance Field Overlay");

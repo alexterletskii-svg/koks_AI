@@ -181,9 +181,34 @@ namespace KoksUI
             if (cardPanel != null) cardPanel.SetActive(false);
         }
 
+        // что осталось осмотреть (названия точек); последние маркеры подсвечиваются и видны сквозь предметы
+        string RemainingNames()
+        {
+            var names = new System.Collections.Generic.List<string>();
+            foreach (var x in points)
+                if (x != null && !x.Inspected && !names.Contains(x.title)) names.Add(x.title);
+            return string.Join(", ", names);
+        }
+
         void Refresh()
         {
-            if (counterText != null) counterText.text = "Осмотрено " + done + " из " + points.Count;
+            int left = points.Count - done;
+            bool few = left > 0 && left <= 3;
+            foreach (var x in points) if (x != null) x.SetSeeThrough(few && !x.Inspected);
+            if (counterText != null)
+            {
+                counterText.enableAutoSizing = true;
+                counterText.fontSizeMax = Mathf.Max(counterText.fontSizeMax, counterText.fontSize);
+                counterText.fontSizeMin = 14f;
+                counterText.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+                counterText.text = "Осмотрено " + done + " из " + points.Count + (few ? ". Осталось: " + RemainingNames() : "");
+            }
+            if (few)
+            {
+                var sb = new System.Text.StringBuilder("[Inspect] осталось осмотреть:");
+                foreach (var x in points) if (x != null && !x.Inspected) sb.Append(" ").Append(x.name).Append(" (").Append(x.title).Append(")");
+                Debug.Log(sb.ToString());
+            }
             if (segments == null) return;
             for (int i = 0; i < segments.Length; i++)
                 if (segments[i] != null) segments[i].color = i < done ? SegOn : SegOff;
