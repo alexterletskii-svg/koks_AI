@@ -43,8 +43,6 @@ namespace KoksUI.Editor
                 "Произвести осмотр состояния канатов и жимков канатов кантовочного механизма."),
             new KoksInspectBuilder.Def("Roller1.003", Kantovka, "Канаты и жимки",
                 "Произвести осмотр состояния канатов и жимков канатов кантовочного механизма."),
-            new KoksInspectBuilder.Def("Roller1.001", Kantovka, "Канаты и жимки",
-                "Произвести осмотр состояния канатов и жимков канатов кантовочного механизма."),
         };
 
         static Transform FindT(string name, bool rootOnly = false)
@@ -86,6 +84,23 @@ namespace KoksUI.Editor
             }
             var hud = KoksInspectBuilder.BuildSet(Defs, circle3.position, "CanvasInspect2", "InspectMarkers2", heading, body, medium);
             if (hud == null) return;
+
+            // Roller1.003 — один меш из множества одинаковых роликов: ромбик ставим на ролик у ближнего к кругу 3 конца
+            foreach (var pt in hud.points)
+            {
+                if (pt == null || pt.name != "Roller1.003") continue;
+                var rr = pt.GetComponent<Renderer>();
+                if (rr == null) continue;
+                Bounds bb = rr.bounds;
+                bool alongX = bb.size.x >= bb.size.z;
+                Vector3 c = bb.center, from = circle3.position;
+                float inset = 0.5f;
+                Vector3 target = c;
+                if (alongX) target.x = from.x < c.x ? bb.min.x + inset : bb.max.x - inset;
+                else target.z = from.z < c.z ? bb.min.z + inset : bb.max.z - inset;
+                pt.markerOffset = new Vector3(target.x - c.x, 0f, target.z - c.z);
+                EditorUtility.SetDirty(pt);
+            }
 
             // ---- окно шага 4 (у круга 4): список из шести пунктов, «Приступить к осмотру»
             var w4Tr = FindT("CanvasStep4", true);
