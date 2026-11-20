@@ -37,7 +37,7 @@ namespace KoksUI.Editor
                 "Произвести осмотр состояния штанг кантовочного механизма."),
             new KoksInspectBuilder.Def("Cube.053", Kantovka, "Канаты и жимки",
                 "Произвести осмотр состояния канатов и жимков канатов кантовочного механизма."),
-            new KoksInspectBuilder.Def("Roller1.003", Kantovka, "Канаты и жимки",
+            new KoksInspectBuilder.Def("Roller1.003", Kantovka, "Ролики канатов",
                 "Произвести осмотр состояния канатов и жимков канатов кантовочного механизма."),
         };
 
@@ -121,6 +121,7 @@ namespace KoksUI.Editor
                     target.z = pipe ? Mathf.Clamp(from.z, bb.min.z + inset, bb.max.z - inset)
                                     : (from.z < c.z ? bb.min.z + inset : bb.max.z - inset);
                 pt.markerOffset = new Vector3(target.x - c.x, 0f, target.z - c.z);
+                if (pipe) pt.markerPull = 1.2f;   // ромбик на трубе — заметно ближе к игроку
                 EditorUtility.SetDirty(pt);
             }
 
