@@ -31,6 +31,11 @@ namespace KoksUI
         [Tooltip("Насколько маркер выдвинут к игроку, м. Больше — реже закрывается своей деталью, но и сквозь соседние предметы виден чуть чаще")]
         public float markerPull = 0.25f;
 
+        [Tooltip("Маркер в центре детали (а не над ней) — для объектов под потолком и за ограждением")]
+        public bool markerAtCenter = false;
+        [Tooltip("Наведение на сам ромбик: луч, прошедший рядом с ромбиком (даже сквозь ограждение), засчитывается как наведение на деталь")]
+        public bool aimAtMarker = true;
+
         [Tooltip("Писать в Console наведение/осмотр (для отладки)")]
         public bool debugLog = true;
 
@@ -71,18 +76,6 @@ namespace KoksUI
             interactable = GetComponent<XRSimpleInteractable>();
         }
 
-        void OnEnable()
-        {
-            interactable.hoverEntered.AddListener(OnHoverEnter);
-            interactable.hoverExited.AddListener(OnHoverExit);
-        }
-
-        void OnDisable()
-        {
-            interactable.hoverEntered.RemoveListener(OnHoverEnter);
-            interactable.hoverExited.RemoveListener(OnHoverExit);
-        }
-
         Renderer[] rends;
 
         void Start()
@@ -108,8 +101,9 @@ namespace KoksUI
             {
                 Bounds b = rends[0].bounds;
                 for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
-                // строго над деталью: по центру и над самой верхней точкой
-                MarkerPosition = new Vector3(b.center.x, b.max.y, b.center.z) + Vector3.up * markerGap + markerOffset;
+                // строго над деталью: по центру и над самой верхней точкой (или в центре детали)
+                MarkerPosition = markerAtCenter ? b.center + markerOffset
+                    : new Vector3(b.center.x, b.max.y, b.center.z) + Vector3.up * markerGap + markerOffset;
             }
             if (marker != null)
             {
@@ -135,10 +129,35 @@ namespace KoksUI
             }
         }
 
-        void OnHoverEnter(HoverEnterEventArgs args)
+        static UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor[] rays;
+        static float raysTime = -100f;
+
+        // луч (любой руки) проходит рядом с ромбиком: допуск растёт с расстоянием, чтобы попадать было несложно
+        bool AimedAt()
         {
-            if (hud != null && !hud.Active) return;   // осмотр ещё не начат
-            if (hud != null && hud.AllDone && InspectHud.OtherRunning(hud)) return; // идёт осмотр другого шага — карточки старых не нужны
+            if (marker == null || !marker.gameObject.activeInHierarchy) return false;
+            if (rays == null || Time.unscaledTime - raysTime > 1f)
+            {
+                rays = Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor>(FindObjectsSortMode.None);
+                raysTime = Time.unscaledTime;
+            }
+            Vector3 m = marker.position;
+            float radius = Mathf.Max(0.15f, markerSize * 0.9f);
+            foreach (var r in rays)
+            {
+                if (r == null || !r.isActiveAndEnabled) continue;
+                Transform t = r.rayOriginTransform != null ? r.rayOriginTransform : r.transform;
+                Vector3 to = m - t.position;
+                float along = Vector3.Dot(to, t.forward);
+                if (along < 0.2f || along > 15f) continue;
+                float off = Vector3.Cross(t.forward, to).magnitude;
+                if (off <= radius + along * 0.03f) return true;
+            }
+            return false;
+        }
+
+        void EnterHover()
+        {
             hovered = true;
             if (debugLog) Debug.Log("[Inspect] наведение: " + name + " (" + group + ", " + title + ")");
             if (hud == null || StepWindow.AnyOpen) return;
@@ -146,7 +165,7 @@ namespace KoksUI
             else hud.ShowProgress(this, held / Mathf.Max(0.1f, fillSeconds));
         }
 
-        void OnHoverExit(HoverExitEventArgs args)
+        void ExitHover()
         {
             hovered = false;
             if (debugLog) Debug.Log("[Inspect] луч ушёл: " + name);
@@ -155,12 +174,15 @@ namespace KoksUI
 
         void Update()
         {
-            // страховка: если луч давно ушёл, а событие выхода не пришло — карточка не должна висеть
-            if (hovered && interactable != null && !interactable.isHovered)
+            // наведение: луч попал в деталь или прошёл рядом с ромбиком
+            bool want = false;
+            if (hud == null || (hud.Active && !(hud.AllDone && InspectHud.OtherRunning(hud))))
             {
-                hovered = false;
-                if (hud != null && Inspected) hud.Hide(this);
+                want = interactable != null && interactable.isHovered;
+                if (!want && aimAtMarker && hud != null && !hud.AllDone) want = AimedAt();
             }
+            if (want && !hovered) EnterHover();
+            else if (!want && hovered) ExitHover();
             // пока открыто окно шага или журнал, осмотр «на паузе»; карточка осмотренной точки вернётся после закрытия окна
             bool blocked = StepWindow.AnyOpen;
             if (hovered && Inspected && !blocked && hud != null && hud.IsFree(this) && !hud.CardShownFor(this) && !(hud.AllDone && InspectHud.OtherRunning(hud)))
@@ -168,7 +190,7 @@ namespace KoksUI
             if (hud == null || Inspected || !hud.Active) return;
             float fill = Mathf.Max(0.1f, fillSeconds);
             if (blocked) return;
-            if (hovered)
+            if (hovered && hud.IsFree(this))
             {
                 held += Time.deltaTime;
                 hud.ShowProgress(this, held / fill);

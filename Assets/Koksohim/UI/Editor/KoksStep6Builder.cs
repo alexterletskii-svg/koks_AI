@@ -230,6 +230,7 @@ namespace KoksUI.Editor
                 NearestEnd(p, circle6.position);
                 p.markerSize = 0.2f;       // маркер крупнее — его видно издалека
                 p.markerPull = 0.6f;
+                p.markerAtCenter = true;
                 EnlargeHitArea(p.gameObject, 0.7f);
                 EditorUtility.SetDirty(p);
             }
@@ -306,6 +307,7 @@ namespace KoksUI.Editor
             {
                 p.markerSize = 0.2f;
                 p.markerPull = 0.8f;
+                p.markerAtCenter = true;
                 EnlargeHitArea(p.gameObject, 0.7f);
                 EditorUtility.SetDirty(p);
             }
