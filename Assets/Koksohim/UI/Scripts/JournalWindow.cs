@@ -191,7 +191,7 @@ namespace KoksUI
             foreach (var l in new[] { dateText, contentText, remarksText })
             {
                 if (l == null) continue;
-                l.enableWordWrapping = false;
+                l.textWrappingMode = TextWrappingModes.NoWrap;
                 l.overflowMode = TextOverflowModes.Ellipsis;
                 l.fontSize = 24f;
                 l.maxVisibleCharacters = 99999;
