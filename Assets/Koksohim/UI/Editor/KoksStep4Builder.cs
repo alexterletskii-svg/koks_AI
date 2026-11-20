@@ -104,14 +104,14 @@ namespace KoksUI.Editor
             // длинные меши (труба, Roller1.003 — множество роликов одним мешом): ромбик на ближайшем к кругу 3 месте
             foreach (var pt in hud.points)
             {
-                if (pt == null || !(pt.name.StartsWith("Pipe_") || pt.name == "Roller1.003" || pt.name == "Cube.053")) continue;
+                if (pt == null || !(pt.name.StartsWith("Pipe_") || pt.name == "Roller1.003" || pt.name == "Cube.053" || pt.name == "Cylinder.161")) continue;
                 var rr = pt.GetComponent<Renderer>();
                 if (rr == null) continue;
                 Bounds bb = rr.bounds;
                 bool alongX = bb.size.x >= bb.size.z;
                 // от круга 4 (там игрок начинает осмотр)
                 Vector3 c = bb.center, from = circle4.position;
-                float inset = 0.5f;
+                float inset = pt.name == "Cylinder.161" ? 0.3f : 0.5f;
                 Vector3 target = c;
                 bool pipe = pt.name.StartsWith("Pipe_");
                 if (alongX)
@@ -120,7 +120,10 @@ namespace KoksUI.Editor
                 else
                     target.z = pipe ? Mathf.Clamp(from.z, bb.min.z + inset, bb.max.z - inset)
                                     : (from.z < c.z ? bb.min.z + inset : bb.max.z - inset);
-                pt.markerOffset = new Vector3(target.x - c.x, 0f, target.z - c.z);
+                // Cylinder.161: крышки с обеих сторон печи одним мешом — ромбик на ближней к игроку стороне (у маленького меша центр не сдвигаем)
+                bool smallMesh = pt.name == "Cylinder.161" && Mathf.Max(bb.size.x, bb.size.z) < 1.5f;
+                pt.markerOffset = smallMesh ? Vector3.zero : new Vector3(target.x - c.x, 0f, target.z - c.z);
+                if (pt.name == "Cylinder.161") pt.markerPull = 1.0f;
                 if (pipe) pt.markerPull = 1.2f;   // ромбик на трубе — заметно ближе к игроку
                 EditorUtility.SetDirty(pt);
             }
