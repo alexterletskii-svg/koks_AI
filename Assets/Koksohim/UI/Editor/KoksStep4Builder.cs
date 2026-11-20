@@ -186,7 +186,7 @@ namespace KoksUI.Editor
             // шаг 5 — информационное окно (без «Приступить к осмотру»): другая сторона осматривается так же
             w5.stepText = "Шаг 5";
             w5.title = "Другая сторона печи";
-            w5.description = "Оборудование на этой стороне печи зеркальное. Осмотрите его таким же образом, как на первой стороне.";
+            w5.description = "При осмотре газовщик коксовых печей осматривает две стороны печи. Вторая сторона осматривается по примеру той, что вы прошли сейчас.";
             w5.checksHeader = "Что делать";
             w5.checks = new[] { "Повторите осмотр в том же порядке", "Результат запишите в журнал" };
             w5.buttonText = "Понятно";
@@ -260,12 +260,6 @@ namespace KoksUI.Editor
             if (m7 == null) m7 = circle7.AddComponent<StepMarker>();
             m7.window = w7;
             EditorUtility.SetDirty(m7);
-            var act6 = new System.Collections.Generic.List<GameObject>();
-            if (m6.activateOnConfirm != null) act6.AddRange(m6.activateOnConfirm.Where(g => g != null));
-            if (!act6.Contains(circle7)) act6.Add(circle7);
-            m6.activateOnConfirm = act6.ToArray();
-            EditorUtility.SetDirty(m6);
-
             // круг шага 6 появляется, когда игрок нажал «Приступить» в окне шага 5
             var act5 = new System.Collections.Generic.List<GameObject>();
             if (m5.activateOnConfirm != null) act5.AddRange(m5.activateOnConfirm.Where(g => g != null));
@@ -308,7 +302,7 @@ namespace KoksUI.Editor
         }
 
         // информационное окно: закрывается само через 6 секунд
-        static StepWindow Info(string name, Vector3 near, TMPro.TMP_FontAsset heading, TMPro.TMP_FontAsset body, TMPro.TMP_FontAsset medium,
+        internal static StepWindow Info(string name, Vector3 near, TMPro.TMP_FontAsset heading, TMPro.TMP_FontAsset body, TMPro.TMP_FontAsset medium,
                                string step, string title, string description, string header, string[] checks, string button)
         {
             var w = KoksStepBuilder.CreateWindow(name, near + new Vector3(0f, 1.5f, 0f), heading, body, medium);
