@@ -23,6 +23,7 @@ namespace KoksUI
         public float fadeSeconds = 0.25f;
 
         Canvas canvas;
+        Vector3 baseScale;
         Action onFinish, onClose;
         bool open;
 
@@ -31,6 +32,7 @@ namespace KoksUI
         void Awake()
         {
             canvas = GetComponent<Canvas>();
+            baseScale = transform.localScale;
             UIDepth.AlwaysOnTop(gameObject);
             if (roomButtons != null) foreach (var b in roomButtons) Prepare(b);
             Prepare(finishButton);
@@ -167,9 +169,14 @@ namespace KoksUI
             Vector3 f = cam.transform.forward; f.y = 0f;
             if (f.sqrMagnitude < 0.01f) f = Vector3.forward;
             f.Normalize();
-            Vector3 p = cam.transform.position + f * distance;
-            p.y = cam.transform.position.y + heightAboveEyes;
+            // окно не должно оказаться за дверью/стеной: иначе луч упирается в преграду и карточки не нажимаются
+            float d = WindowFit.Free(cam.transform, f, distance, 24f);
+            float k = d / distance;
+            transform.localScale = baseScale * k;
+            Vector3 p = cam.transform.position + f * d;
+            p.y = cam.transform.position.y + heightAboveEyes * k;
             transform.position = p;
+            Debug.Log("[Exam] окно выхода: расстояние " + d.ToString("0.00") + " м");
             Face(cam);
         }
 

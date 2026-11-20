@@ -59,6 +59,7 @@ namespace KoksUI
         const int MaxEntries = 5;
 
         Canvas canvas;
+        Vector3 baseScale;
         bool open;
         bool busy;
         bool written;
@@ -68,6 +69,7 @@ namespace KoksUI
         void Awake()
         {
             canvas = GetComponent<Canvas>();
+            baseScale = transform.localScale;
             UIDepth.AlwaysOnTop(gameObject);
             if (actionButton != null)
             {
@@ -172,7 +174,9 @@ namespace KoksUI
             fwd.y = 0f;
             if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.forward;
             fwd.Normalize();
-            transform.position = cam.transform.position + fwd * distance + Vector3.down * 0.1f;
+            float d = WindowFit.Free(cam.transform, fwd, distance, 20f);
+            transform.localScale = baseScale * (d / distance);
+            transform.position = cam.transform.position + fwd * d + Vector3.down * 0.1f * (d / distance);
             Face(cam);
         }
 

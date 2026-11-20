@@ -87,13 +87,18 @@ namespace KoksUI
             StartCoroutine(Fade());
         }
 
+        Vector3 baseScale;
+
         void Place(Camera cam)
         {
             if (cam == null) return;
             Vector3 fwd = cam.transform.forward; fwd.y = 0f;
             if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.forward;
             fwd.Normalize();
-            transform.position = cam.transform.position + fwd * distance;
+            if (baseScale == Vector3.zero) baseScale = transform.localScale;
+            float d = WindowFit.Free(cam.transform, fwd, distance, 14f);
+            transform.localScale = baseScale * (d / distance);
+            transform.position = cam.transform.position + fwd * d;
             Vector3 look = transform.position - cam.transform.position; look.y = 0f;
             if (look.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
         }
