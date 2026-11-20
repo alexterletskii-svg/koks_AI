@@ -25,6 +25,8 @@ namespace KoksUI
 
         [Header("Объекты (находятся сами, можно назначить вручную)")]
         public Transform door;
+        [Tooltip("Дверь выхода, на которую вешается журнал (ищется по имени door.003 / Door1)")]
+        public Transform journalDoor;
         public Transform condensate;
         public DrainValve drain;
         public JournalWindow journal;
@@ -197,6 +199,16 @@ namespace KoksUI
                 Debug.LogWarning("[Exam] не найден конденсатоотводчик: осмотр считается по кругу PointPosition_Step9 (" + (condensate != null ? "найден" : "не найден") + ").");
             }
 
+            if (journalDoor == null)
+            {
+                foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    if (t.name == "door.003") { journalDoor = t; break; }
+                if (journalDoor == null)
+                    foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                        if (t.name == "Door1") { journalDoor = t; break; }
+                if (journalDoor == null) Debug.LogWarning("[Exam] не найдена дверь door.003 / Door1: журнал некуда повесить. Назначьте Journal Door в Inspector.");
+            }
+
             if (tunnelTrigger != null) tunnelTrigger.onArrived.AddListener(StartExam);
             else StartExam();   // триггера нет — считаем с начала сцены
             if (ringRoot != null) { UIDepth.AlwaysOnTop(ringRoot); ringRoot.SetActive(false); }
@@ -207,7 +219,7 @@ namespace KoksUI
             if (started) return;
             started = true;
             startTime = Time.time;
-            if (journalIcon != null) journalIcon.PlaceAtEntrance();
+            if (journalIcon != null) journalIcon.PlaceOnDoor(journalDoor);
             Debug.Log("[Exam] экзамен начался (вход в тоннель)");
         }
 

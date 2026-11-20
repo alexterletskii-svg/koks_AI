@@ -4,22 +4,17 @@ using UnityEngine.UI;
 namespace KoksUI
 {
     /// <summary>
-    /// Значок «Журнал» на экзамене: держится у пояса слева (как планшет) и следует за игроком.
+    /// Значок «Журнал» на экзамене: висит на двери выхода со стороны игрока.
     /// Наведите луч и нажмите триггер — открывается журнал, где результаты осмотра записываются самому.
     /// </summary>
     public class ExamJournalIcon : MonoBehaviour
     {
         public Button button;
         public JournalWindow journal;
-        [Tooltip("Где держится относительно игрока: вперёд / влево / вниз от уровня глаз, м")]
-        public float forward = 0.5f;
-        public float left = 0.3f;
-        public float down = 0.5f;
-        [Tooltip("Насколько лениво панель разворачивается за поворотом тела, с")]
-        public float yawLag = 0.6f;
-
-        float yaw, yawVel;
-        bool placed;
+        [Tooltip("Высота центра панели над полом двери, м (ручка ниже, чтобы не закрывать её)")]
+        public float heightOnDoor = 1.45f;
+        [Tooltip("Отступ от поверхности двери к игроку, м")]
+        public float offDoor = 0.04f;
 
         Canvas canvas;
         bool visible;
@@ -55,26 +50,25 @@ namespace KoksUI
             if (journal != null && !StepWindow.AnyOpen) journal.Show();
         }
 
-        /// <summary>Панель следует за игроком, как планшет у пояса: держится слева-внизу и лениво разворачивается за телом.</summary>
-        void LateUpdate()
+        /// <summary>Повесить панель на дверь выхода (со стороны игрока). Дальше она стоит на месте.</summary>
+        public void PlaceOnDoor(Transform door)
         {
-            if (!visible) return;
             Camera cam = Camera.main;
-            if (cam == null) return;
-            Transform c = cam.transform;
-            Vector3 f = c.forward; f.y = 0f;
-            if (f.sqrMagnitude < 0.01f) f = Vector3.forward;
-            float camYaw = Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg;
-            bool first = !placed;
-            if (first) { yaw = camYaw; yawVel = 0f; placed = true; }
-            yaw = Mathf.SmoothDampAngle(yaw, camYaw, ref yawVel, yawLag);
-            Quaternion q = Quaternion.Euler(0f, yaw, 0f);
-            Vector3 target = c.position + q * (Vector3.forward * forward + Vector3.left * left) + Vector3.down * down;
-            transform.position = first ? target : Vector3.Lerp(transform.position, target, 1f - Mathf.Exp(-12f * Time.unscaledDeltaTime));
-            Vector3 look = transform.position - c.position;
-            if (look.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
+            if (door == null || cam == null) return;
+            var rends = door.GetComponentsInChildren<Renderer>();
+            if (rends.Length == 0) { transform.position = door.position + Vector3.up * heightOnDoor; return; }
+            Bounds b = rends[0].bounds;
+            for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+            // тонкая ось двери — её нормаль; сторона — та, где игрок
+            bool alongX = b.size.x < b.size.z;
+            Vector3 n = alongX ? Vector3.right : Vector3.forward;
+            Vector3 toPlayer = cam.transform.position - b.center;
+            if (Vector3.Dot(n, toPlayer) < 0f) n = -n;
+            float thick = alongX ? b.size.x : b.size.z;
+            Vector3 pos = b.center + n * (thick * 0.5f + offDoor);
+            pos.y = Mathf.Min(b.min.y + heightOnDoor, b.max.y - 0.25f);
+            transform.position = pos;
+            transform.rotation = Quaternion.LookRotation(-n, Vector3.up);   // лицом к игроку
         }
-
-        public void PlaceAtEntrance() { placed = false; }
     }
 }
