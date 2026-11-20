@@ -204,6 +204,7 @@ namespace KoksUI.Editor
             EditorUtility.SetDirty(m3);
 
             // круг шага 2 включает круг шага 3 после «Понятно»
+            m2.activateOnEnter = new[] { circle3 };     // круг шага 3 виден сразу вместе с окном «Поднимитесь по лестнице»
             m2.activateOnConfirm = new[] { circle3 };
             EditorUtility.SetDirty(m2);
 

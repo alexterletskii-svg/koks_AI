@@ -18,6 +18,9 @@ namespace KoksUI
         public float minHeight = -0.5f;
         public float maxHeight = 3.0f;
 
+        [Tooltip("Что включить сразу, когда окно появилось (например, следующий круг — он виден вместе с окном)")]
+        public GameObject[] activateOnEnter;
+
         [Tooltip("Что включить после «Приступить к осмотру» (например, следующий круг)")]
         public GameObject[] activateOnConfirm;
 
@@ -83,6 +86,8 @@ namespace KoksUI
 
             shown = true;
             onEntered.Invoke();
+            if (activateOnEnter != null)
+                foreach (var g in activateOnEnter) if (g != null) g.SetActive(true);
             window.Show();
         }
 
