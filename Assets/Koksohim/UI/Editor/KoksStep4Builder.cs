@@ -183,6 +183,16 @@ namespace KoksUI.Editor
                 w5.gameObject.SetActive(false);
                 EditorUtility.SetDirty(w5);
             }
+            // шаг 5 — информационное окно (без «Приступить к осмотру»): другая сторона осматривается так же
+            w5.stepText = "Шаг 5";
+            w5.title = "Другая сторона печи";
+            w5.description = "Оборудование на этой стороне печи зеркальное. Осмотрите его таким же образом, как на первой стороне.";
+            w5.checksHeader = "Что делать";
+            w5.checks = new[] { "Повторите осмотр в том же порядке", "Результат запишите в журнал" };
+            w5.buttonText = "Понятно";
+            w5.autoConfirmSeconds = 8f;
+            w5.Apply();
+            EditorUtility.SetDirty(w5);
             var m5 = circle5.GetComponent<StepMarker>();
             if (m5 == null) m5 = circle5.AddComponent<StepMarker>();
             m5.window = w5;
@@ -219,6 +229,43 @@ namespace KoksUI.Editor
             if (m6 == null) m6 = circle6.AddComponent<StepMarker>();
             m6.window = w6;
             EditorUtility.SetDirty(m6);
+            // ---- шаг 7: круг и окно-заглушка (после окна шага 6)
+            var circle7Tr = FindT("PointPosition_Step7");
+            GameObject circle7;
+            if (circle7Tr != null) circle7 = circle7Tr.gameObject;
+            else
+            {
+                var prefab7 = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Koksohim/Prefabs/PointPosition.prefab");
+                if (prefab7 == null) { Debug.LogError("[Koks UI] Нет префаба PointPosition."); return; }
+                circle7 = (GameObject)PrefabUtility.InstantiatePrefab(prefab7);
+                circle7.name = "PointPosition_Step7";
+                circle7.transform.position = circle6.transform.position + new Vector3(2f, 0f, 0f);
+                circle7.transform.rotation = circle6.transform.rotation;
+            }
+            var w7Tr = FindT("CanvasStep7", true);
+            StepWindow w7 = w7Tr != null ? w7Tr.GetComponent<StepWindow>() : null;
+            if (w7 == null)
+            {
+                w7 = KoksStepBuilder.CreateWindow("CanvasStep7", circle7.transform.position + new Vector3(0f, 1.5f, 0f), heading, body, medium);
+                w7.stepText = "Шаг 7";
+                w7.title = "Следующий этап";
+                w7.description = "Здесь будет описание следующего этапа.";
+                w7.checksHeader = "Что проверить";
+                w7.buttonText = "Приступить к осмотру";
+                w7.Apply();
+                w7.gameObject.SetActive(false);
+                EditorUtility.SetDirty(w7);
+            }
+            var m7 = circle7.GetComponent<StepMarker>();
+            if (m7 == null) m7 = circle7.AddComponent<StepMarker>();
+            m7.window = w7;
+            EditorUtility.SetDirty(m7);
+            var act6 = new System.Collections.Generic.List<GameObject>();
+            if (m6.activateOnConfirm != null) act6.AddRange(m6.activateOnConfirm.Where(g => g != null));
+            if (!act6.Contains(circle7)) act6.Add(circle7);
+            m6.activateOnConfirm = act6.ToArray();
+            EditorUtility.SetDirty(m6);
+
             // круг шага 6 появляется, когда игрок нажал «Приступить» в окне шага 5
             var act5 = new System.Collections.Generic.List<GameObject>();
             if (m5.activateOnConfirm != null) act5.AddRange(m5.activateOnConfirm.Where(g => g != null));
@@ -243,12 +290,13 @@ namespace KoksUI.Editor
             StepFlow flow = flowTr != null ? flowTr.GetComponent<StepFlow>() : new GameObject("StepFlow").AddComponent<StepFlow>();
             var hide = new List<GameObject>();
             if (flow.hideAtStart != null) hide.AddRange(flow.hideAtStart.Where(g => g != null));
-            foreach (var g in new[] { circle5, circle6, journal.gameObject, done.gameObject, w5.gameObject, w6.gameObject, w4.gameObject })
+            foreach (var g in new[] { circle5, circle6, circle7, journal.gameObject, done.gameObject, w5.gameObject, w6.gameObject, w7.gameObject, w4.gameObject })
                 if (!hide.Contains(g)) hide.Add(g);
             flow.hideAtStart = hide.ToArray();
             EditorUtility.SetDirty(flow);
             circle5.SetActive(false);
             circle6.SetActive(false);
+            circle7.SetActive(false);
 
             Selection.activeGameObject = circle5;
             var scene = hud.gameObject.scene;
