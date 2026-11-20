@@ -9,8 +9,8 @@ namespace KoksUI.Editor
     /// <summary>
     /// Koks → Build UI → 14. Шаги 6–9. Запускать в FirstScene вне Play, после меню 13.
     /// Шаг 6: ролики кантовочного механизма. Шаг 8: сточные линии газоподогревателя (кран + вода).
-    /// После сточных линий — финальное окно и возврат в MenuScene (шага 9 нет).
-    /// Круги: PointPosition_Step6 (уже есть), PointPosition_Step8. Можно запускать повторно
+    /// Шаг 9: уровень воды в конденсатоотводчике, затем возврат в MenuScene.
+    /// Круги: PointPosition_Step6 (уже есть), PointPosition_Step8, PointPosition_Step9. Можно запускать повторно
     /// (после перестановки кругов — чтобы выбрать ближайшие объекты и ромбики).
     /// </summary>
     public static class KoksStep6Builder
@@ -146,12 +146,11 @@ namespace KoksUI.Editor
             var medium = KoksUIBuilder.LoadFont("Inter-Medium");
             if (heading == null || body == null || medium == null) { Debug.LogError("[Koks UI] Нет шрифтов TMP."); return; }
 
-            Clean("CanvasInspect3", "InspectMarkers3", "CanvasInspect4", "InspectMarkers4", "CanvasInspect5", "InspectMarkers5", "CanvasStep9", "CanvasFinish", "CanvasStep8Done");
+            Clean("CanvasInspect3", "InspectMarkers3", "CanvasInspect4", "InspectMarkers4", "CanvasInspect5", "InspectMarkers5");
 
             var circle8 = Circle("PointPosition_Step8", circle6.position + new Vector3(3f, 0f, 0f), circle6.rotation);
-            var old9 = FindT("PointPosition_Step9", true);
-            if (old9 != null) Object.DestroyImmediate(old9.gameObject);   // шага 9 больше нет
-            if (circle8 == null) return;
+            var circle9 = Circle("PointPosition_Step9", circle6.position + new Vector3(6f, 0f, 0f), circle6.rotation);
+            if (circle8 == null || circle9 == null) return;
 
             // ===== шаг 6: ролики =====
             var rollerDefs = new List<KoksInspectBuilder.Def>();
@@ -209,6 +208,10 @@ namespace KoksUI.Editor
                 "Нужно проверить работоспособность сточных линий газоподогревателя.",
                 "Что проверить", new[] { "Откройте кран: наведите луч и держите", "Убедитесь, что вода идёт по линии" },
                 "Приступить к осмотру", 0f);
+            var done8 = Win("CanvasStep8Done", circle8.transform.position, heading, body, medium,
+                "Шаг 8 выполнен", "Сточные линии работают",
+                "Кран открыт, вода идёт. Переходим к проверке конденсатоотводчика.",
+                "Что дальше", new[] { "Пройдите к синему кругу" }, "Понятно", 6f);
             var m8 = circle8.GetComponent<StepMarker>();
             if (m8 == null) m8 = circle8.AddComponent<StepMarker>();
             m8.window = w8;
@@ -220,40 +223,60 @@ namespace KoksUI.Editor
             dv.hud = hud4;
             dv.valve = torus;
             dv.water = water;
+            dv.window = done8;
+            dv.activateAfter = new[] { circle9 };
+            EditorUtility.SetDirty(dv);
 
-            // ===== финал: после сточных линий — окно и возврат в MenuScene (шага 9 нет) =====
-            var finish = Win("CanvasFinish", circle8.transform.position, heading, body, medium,
+            // ===== шаг 9: конденсатоотводчик, затем выход в меню =====
+            var coll = FindT("CondensateCollector");
+            if (coll == null) { Debug.LogError("[Koks UI] Не найден CondensateCollector."); return; }
+            var hud5 = KoksInspectBuilder.BuildSet(new[]
+            {
+                new KoksInspectBuilder.Def("CondensateCollector", "Конденсатоотводчик", "Уровень воды",
+                    "Визуально проверить уровень воды в конденсатоотводчике.")
+            }, circle9.transform.position, "CanvasInspect5", "InspectMarkers5", heading, body, medium);
+            if (hud5 == null) return;
+            var w9 = Win("CanvasStep9", circle9.transform.position, heading, body, medium,
+                "Шаг 9", "Конденсатоотводчик",
+                "Последний этап осмотра — конденсатоотводчик.",
+                "Что проверить", new[] { "Визуально проверьте уровень воды в конденсатоотводчике" },
+                "Приступить к осмотру", 0f);
+            var finish = Win("CanvasFinish", circle9.transform.position, heading, body, medium,
                 "Осмотр завершён", "Осмотр выполнен",
                 "Вы завершили осмотр. Сейчас вы вернётесь в главное меню.",
                 "Что дальше", new[] { "Возврат в главное меню" }, "В меню", 8f);
+            var m9 = circle9.GetComponent<StepMarker>();
+            if (m9 == null) m9 = circle9.AddComponent<StepMarker>();
+            m9.window = w9;
+            EditorUtility.SetDirty(m9);
+            hud5.startWindow = w9;
+            hud5.completionWindow = finish;
             var sl = finish.GetComponent<SceneLoadOnConfirm>();
             if (sl == null) sl = finish.gameObject.AddComponent<SceneLoadOnConfirm>();
             sl.window = finish;
             sl.sceneName = "MenuScene";
             EditorUtility.SetDirty(sl);
-            dv.window = finish;
-            dv.activateAfter = new GameObject[0];
-            EditorUtility.SetDirty(dv);
 
-            foreach (var h in new[] { hud3, hud4 }) EditorUtility.SetDirty(h);
+            foreach (var h in new[] { hud3, hud4, hud5 }) EditorUtility.SetDirty(h);
 
             // ===== всё последующее скрыто при старте =====
             var flowTr = FindT("StepFlow", true);
             StepFlow flow = flowTr != null ? flowTr.GetComponent<StepFlow>() : new GameObject("StepFlow").AddComponent<StepFlow>();
             var hide = new List<GameObject>();
             if (flow.hideAtStart != null) hide.AddRange(flow.hideAtStart.Where(g => g != null));
-            foreach (var g in new[] { circle8, w6.gameObject, done6.gameObject, w8.gameObject, finish.gameObject })
+            foreach (var g in new[] { circle8, circle9, w6.gameObject, done6.gameObject, w8.gameObject, done8.gameObject, w9.gameObject, finish.gameObject })
                 if (!hide.Contains(g)) hide.Add(g);
             flow.hideAtStart = hide.ToArray();
             EditorUtility.SetDirty(flow);
             circle8.SetActive(false);
+            circle9.SetActive(false);
 
             Selection.activeGameObject = circle8;
             var scene = hud3.gameObject.scene;
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log("[Koks UI] Шаги 6–9 собраны: ролики " + hud3.points.Count + " шт. Круг PointPosition_Step8 создан — " +
-                      "переставьте его (включить галочку, переставить, снять), затем запустите меню 14 ещё раз, чтобы выбрать ближайшие объекты.");
+            Debug.Log("[Koks UI] Шаги 6–9 собраны: ролики " + hud3.points.Count + " шт. Круги PointPosition_Step8 и PointPosition_Step9 созданы — " +
+                      "переставьте их (включить галочку, переставить, снять), затем запустите меню 14 ещё раз, чтобы выбрать ближайшие объекты.");
         }
     }
 }
