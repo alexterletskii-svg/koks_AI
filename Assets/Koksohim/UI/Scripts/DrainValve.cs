@@ -65,6 +65,23 @@ namespace KoksUI
             Debug.Log("[DrainValve] кран открыт, вода идёт");
 
             yield return new WaitForSeconds(flowSeconds);
+
+            // закрываем кран: вращение назад, вода перестаёт идти
+            Quaternion open = valve != null ? valve.localRotation : Quaternion.identity;
+            t = 0f;
+            while (t < spinSeconds)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / Mathf.Max(0.1f, spinSeconds)));
+                if (valve != null) valve.localRotation = open * Quaternion.Euler(0f, 0f, -spinDegrees * k);
+                if (t > spinSeconds * 0.6f && water != null && water.isEmitting) water.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                yield return null;
+            }
+            if (valve != null) valve.localRotation = start;
+            if (water != null) water.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            Debug.Log("[DrainValve] кран закрыт, вода перекрыта");
+            yield return new WaitForSeconds(1.2f);
+
             if (window != null)
             {
                 while (StepWindow.AnyOpen) yield return null;

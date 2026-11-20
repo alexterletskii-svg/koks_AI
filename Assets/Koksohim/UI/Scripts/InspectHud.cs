@@ -91,8 +91,24 @@ namespace KoksUI
         public int Total { get { return points.Count; } }
         public int Done { get { return done; } }
 
+        // пока на экране окно шага или журнал, кольцо и карточки осмотра не показываются (иначе они рисуются поверх окна)
+        void Update()
+        {
+            if (StepWindow.AnyOpen && (current != null || (progressPanel != null && progressPanel.activeSelf) || (cardPanel != null && cardPanel.activeSelf)))
+            {
+                current = null;
+                HideAll();
+            }
+        }
+
+        public bool CardShownFor(InspectPoint p)
+        {
+            return current == p && cardPanel != null && cardPanel.activeSelf;
+        }
+
         public void ShowProgress(InspectPoint p, float t01)
         {
+            if (StepWindow.AnyOpen) return;
             if (current != p)
             {
                 current = p;
@@ -109,6 +125,7 @@ namespace KoksUI
 
         public void ShowCard(InspectPoint p)
         {
+            if (StepWindow.AnyOpen) return;
             if (current != p) Place(p);
             current = p;
             cardGroup.text = p.group;

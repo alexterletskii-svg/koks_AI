@@ -76,7 +76,7 @@ namespace KoksUI.Editor
         }
 
         // область наведения луча — по габаритам детали с запасом (маленькую деталь иначе трудно поймать лучом)
-        static void EnlargeHitArea(GameObject go)
+        static void EnlargeHitArea(GameObject go, float pad)
         {
             var r = go.GetComponentInChildren<Renderer>();
             if (r == null) return;
@@ -84,11 +84,56 @@ namespace KoksUI.Editor
             Bounds b = r.bounds;
             Vector3 ls = go.transform.lossyScale;
             Vector3 inv = new Vector3(1f / Mathf.Max(0.0001f, Mathf.Abs(ls.x)), 1f / Mathf.Max(0.0001f, Mathf.Abs(ls.y)), 1f / Mathf.Max(0.0001f, Mathf.Abs(ls.z)));
-            Vector3 size = b.size + Vector3.one * 0.2f;
+            Vector3 size = b.size + Vector3.one * pad;
             var bc = go.AddComponent<BoxCollider>();
             bc.center = go.transform.InverseTransformPoint(b.center);
             bc.size = Vector3.Scale(size, inv);
             EditorUtility.SetDirty(bc);
+        }
+
+        // забор и прочее между кругом и объектом не должны перехватывать луч: такие объекты переводятся на слой Ignore Raycast,
+        // а у XR-лучей этот слой исключается из маски. Столкновения с игроком от этого не меняются.
+        static void ClearRayPath(Vector3 from, Transform target)
+        {
+            var rr = target.GetComponentInChildren<Renderer>();
+            if (rr == null) return;
+            Vector3 to = rr.bounds.center;
+            Physics.SyncTransforms();
+            Vector3 dir = to - from;
+            var hits = Physics.RaycastAll(from, dir.normalized, dir.magnitude, ~0, QueryTriggerInteraction.Ignore);
+            int moved = 0;
+            foreach (var h in hits)
+            {
+                if (h.collider == null || h.collider.transform.IsChildOf(target) || target.IsChildOf(h.collider.transform)) continue;
+                string path = h.collider.name + (h.collider.transform.parent != null ? " (в " + h.collider.transform.parent.name + ")" : "");
+                bool fence = false;
+                for (var t = h.collider.transform; t != null; t = t.parent) if (t.name.ToLower().Contains("fenc")) { fence = true; break; }
+                Debug.Log("[Koks UI] Между кругом 9 и конденсатоотводчиком: " + path + (fence ? " — забор, луч сквозь него" : ""));
+                if (!fence) continue;
+                var root = h.collider.transform;
+                while (root.parent != null && !root.name.ToLower().Contains("fenc")) root = root.parent;
+                foreach (var tr in root.GetComponentsInChildren<Transform>(true)) { tr.gameObject.layer = 2; EditorUtility.SetDirty(tr.gameObject); }
+                moved++;
+            }
+            if (moved > 0) Debug.Log("[Koks UI] Забор переведён на слой Ignore Raycast.");
+            // весь забор (объекты Fenc) — на слой Ignore Raycast: луч проходит сквозь него, игрок упирается как раньше
+            int fences = 0;
+            foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (t != null && t.gameObject.scene.IsValid() && t.name.ToLower().Contains("fenc") && t.gameObject.layer != 2)
+                {
+                    foreach (var tr in t.GetComponentsInChildren<Transform>(true)) { tr.gameObject.layer = 2; EditorUtility.SetDirty(tr.gameObject); }
+                    fences++;
+                }
+            Debug.Log("[Koks UI] Объектов забора переведено на слой Ignore Raycast: " + fences);
+            // лучи игрока не должны этот слой учитывать
+            int n = 0;
+            foreach (var ri in Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                ri.raycastMask = ri.raycastMask & ~(1 << 2);
+                EditorUtility.SetDirty(ri);
+                n++;
+            }
+            Debug.Log("[Koks UI] Маска лучей обновлена у " + n + " интеракторов.");
         }
 
         static ParticleSystem BuildWater(Transform cilWater)
@@ -169,32 +214,23 @@ namespace KoksUI.Editor
             if (circle8 == null || circle9 == null) return;
 
             // ===== шаг 6: ролики =====
-            // один ролик (ближайший к кругу 6): его проще найти и навести луч; остальные ролики — в тексте окон
-            string rollerName = null;
-            float rd = float.MaxValue;
+            // два ролика: Roller1 и Roller1.002 (остальные ролики и блочки — в тексте окон)
+            var rollerDefs = new List<KoksInspectBuilder.Def>();
             foreach (var r in RollerCandidates)
             {
-                var t = FindT(r);
-                var rr = t != null ? t.GetComponentInChildren<Renderer>() : null;
-                if (rr == null) continue;
-                float d = (rr.bounds.ClosestPoint(circle6.position) - circle6.position).sqrMagnitude;
-                if (d < rd) { rd = d; rollerName = r; }
+                if (FindT(r) == null) { Debug.LogWarning("[Koks UI] Не найден " + r); continue; }
+                rollerDefs.Add(new KoksInspectBuilder.Def(r, "Кантовочный механизм", "Опорный ролик",
+                    "Произвести осмотр состояния целостности блочков и опорных роликов кантовочного механизма. Остальные ролики и блочки осматриваются так же."));
             }
-            if (rollerName == null) { Debug.LogError("[Koks UI] Не найдены ролики Roller1 и Roller1.002."); return; }
-            var rollerDefs = new List<KoksInspectBuilder.Def>
-            {
-                new KoksInspectBuilder.Def(rollerName, "Кантовочный механизм", "Опорный ролик",
-                    "Произвести осмотр состояния целостности блочков и опорных роликов кантовочного механизма. Остальные ролики и блочки осматриваются так же.")
-            };
-            Debug.Log("[Koks UI] Для осмотра выбран ролик " + rollerName + ".");
+            if (rollerDefs.Count == 0) { Debug.LogError("[Koks UI] Не найдены ролики Roller1 и Roller1.002."); return; }
             var hud3 = KoksInspectBuilder.BuildSet(rollerDefs.ToArray(), circle6.position, "CanvasInspect3", "InspectMarkers3", heading, body, medium);
             if (hud3 == null) return;
             foreach (var p in hud3.points)
             {
                 NearestEnd(p, circle6.position);
-                p.markerSize = 0.16f;       // маркер крупнее — его видно издалека
-                p.markerPull = 0.5f;
-                EnlargeHitArea(p.gameObject);
+                p.markerSize = 0.2f;       // маркер крупнее — его видно издалека
+                p.markerPull = 0.6f;
+                EnlargeHitArea(p.gameObject, 0.7f);
                 EditorUtility.SetDirty(p);
             }
 
@@ -202,9 +238,9 @@ namespace KoksUI.Editor
             if (w6 == null) w6 = Win("CanvasStep6", circle6.position, heading, body, medium, "", "", "", "", new string[0], "", 0f);
             w6.stepText = "Шаг 6";
             w6.title = "Опорные ролики";
-            w6.description = "Следующим этапом осмотра является осмотр состояния целостности блочков и опорных роликов кантовочного механизма. Осмотрите ролик, отмеченный ромбиком, остальные ролики и блочки осматриваются так же.";
+            w6.description = "Следующим этапом осмотра является осмотр состояния целостности блочков и опорных роликов кантовочного механизма. Осмотрите ролики, отмеченные ромбиками, остальные ролики и блочки осматриваются так же.";
             w6.checksHeader = "Что проверить";
-            w6.checks = new[] { "Целостность блочков кантовочного механизма", "Целостность опорных роликов: осмотрите отмеченные ролики" };
+            w6.checks = new[] { "Целостность блочков кантовочного механизма", "Целостность опорных роликов: осмотрите два отмеченных ролика" };
             w6.buttonText = "Приступить к осмотру";
             w6.autoConfirmSeconds = 0f;
             w6.Apply();
@@ -216,7 +252,7 @@ namespace KoksUI.Editor
             EditorUtility.SetDirty(m6);
 
             var done6 = Win("CanvasStep6Done", circle6.position, heading, body, medium,
-                "Шаг 6 выполнен", "Ролик осмотрен",
+                "Шаг 6 выполнен", "Осмотр роликов завершён",
                 "Остальные ролики и блочки осматриваются так же. Переходим к осмотру сточных линий газоподогревателя.",
                 "Что дальше", new[] { "Пройдите к синему кругу" }, "Понятно", 6f);
             hud3.startWindow = w6;
@@ -236,11 +272,11 @@ namespace KoksUI.Editor
             var w8 = Win("CanvasStep8", circle8.transform.position, heading, body, medium,
                 "Шаг 8", "Сточные линии газоподогревателя",
                 "Нужно проверить работоспособность сточных линий газоподогревателя.",
-                "Что проверить", new[] { "Откройте кран: наведите луч и держите", "Убедитесь, что вода идёт по линии" },
+                "Что проверить", new[] { "Откройте кран: наведите луч и держите", "Убедитесь, что вода идёт по линии", "Закройте кран после проверки" },
                 "Приступить к осмотру", 0f);
             var done8 = Win("CanvasStep8Done", circle8.transform.position, heading, body, medium,
-                "Шаг 8 выполнен", "Сточные линии работают",
-                "Кран открыт, вода идёт. Переходим к проверке конденсатоотводчика.",
+                "Шаг 8 выполнен", "Кран закрыт",
+                "Сточная линия работает: вода шла, кран закрыт. Переходим к проверке конденсатоотводчика.",
                 "Что дальше", new[] { "Пройдите к синему кругу" }, "Понятно", 6f);
             var m8 = circle8.GetComponent<StepMarker>();
             if (m8 == null) m8 = circle8.AddComponent<StepMarker>();
@@ -266,6 +302,14 @@ namespace KoksUI.Editor
                     "Визуально проверить уровень воды в конденсатоотводчике.")
             }, circle9.transform.position, "CanvasInspect5", "InspectMarkers5", heading, body, medium);
             if (hud5 == null) return;
+            foreach (var p in hud5.points)
+            {
+                p.markerSize = 0.2f;
+                p.markerPull = 0.8f;
+                EnlargeHitArea(p.gameObject, 0.7f);
+                EditorUtility.SetDirty(p);
+            }
+            ClearRayPath(circle9.transform.position + Vector3.up * 1.6f, coll);
             var w9 = Win("CanvasStep9", circle9.transform.position, heading, body, medium,
                 "Шаг 9", "Конденсатоотводчик",
                 "Последний этап осмотра — конденсатоотводчик.",

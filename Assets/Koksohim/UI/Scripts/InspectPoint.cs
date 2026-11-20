@@ -141,7 +141,7 @@ namespace KoksUI
             if (hud != null && hud.AllDone && InspectHud.OtherRunning(hud)) return; // идёт осмотр другого шага — карточки старых не нужны
             hovered = true;
             if (debugLog) Debug.Log("[Inspect] наведение: " + name + " (" + group + ", " + title + ")");
-            if (hud == null) return;
+            if (hud == null || StepWindow.AnyOpen) return;
             if (Inspected) hud.ShowCard(this);
             else hud.ShowProgress(this, held / Mathf.Max(0.1f, fillSeconds));
         }
@@ -161,8 +161,13 @@ namespace KoksUI
                 hovered = false;
                 if (hud != null && Inspected) hud.Hide(this);
             }
+            // пока открыто окно шага или журнал, осмотр «на паузе»; карточка осмотренной точки вернётся после закрытия окна
+            bool blocked = StepWindow.AnyOpen;
+            if (hovered && Inspected && !blocked && hud != null && hud.IsFree(this) && !hud.CardShownFor(this) && !(hud.AllDone && InspectHud.OtherRunning(hud)))
+                hud.ShowCard(this);
             if (hud == null || Inspected || !hud.Active) return;
             float fill = Mathf.Max(0.1f, fillSeconds);
+            if (blocked) return;
             if (hovered)
             {
                 held += Time.deltaTime;
