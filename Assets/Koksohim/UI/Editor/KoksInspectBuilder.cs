@@ -59,23 +59,6 @@ namespace KoksUI.Editor
             foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (t.name == "PointPosition" && t.parent == null) { near = t.position; break; }
 
-            // находим объекты
-            var targets = new List<GameObject>();
-            foreach (var d in Defs)
-            {
-                var found = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                    .Where(t => t.name == d.obj && t.gameObject.scene.IsValid())
-                    .OrderBy(t => (t.position - near).sqrMagnitude).ToList();
-                if (found.Count == 0)
-                {
-                    Debug.LogError("[Koks UI] Не найден объект " + d.obj + " (" + d.group + ", " + d.title + "). Откройте FirstScene.");
-                    return;
-                }
-                if (found.Count > 1)
-                    Debug.LogWarning("[Koks UI] Объектов с именем " + d.obj + " несколько (" + found.Count + "), взят ближайший к кругу: " + found[0].position);
-                targets.Add(found[0].gameObject);
-            }
-
             // чистим прошлую сборку
             foreach (var n in new[] { "CanvasInspect", "InspectMarkers" })
             {
@@ -83,13 +66,45 @@ namespace KoksUI.Editor
                 while (o != null) { Object.DestroyImmediate(o); o = GameObject.Find(n); }
             }
 
-            // ---- окно
-            var hud = BuildHud(heading, body, medium, Defs.Length);
+            var hud = BuildSet(Defs, near, "CanvasInspect", "InspectMarkers", heading, body, medium);
+            if (hud == null) return;
 
-            // ---- маркеры и точки
-            var markersRoot = new GameObject("InspectMarkers");
+            Selection.activeGameObject = hud.gameObject;
+            var scene = hud.gameObject.scene;
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[Koks UI] Осмотр клапанов собран: " + hud.points.Count + " точек. Тексты — на каждом объекте в компоненте Inspect Point.");
+        }
+
+        /// <summary>
+        /// Находит объекты по именам (из одноимённых берёт ближайший к near), вешает на них точки осмотра,
+        /// строит окно осмотра и маркеры. Прежних объектов с этими именами не трогает — их чистит вызывающий.
+        /// </summary>
+        internal static InspectHud BuildSet(Def[] defs, Vector3 near, string hudName, string markersName,
+                                            TMP_FontAsset heading, TMP_FontAsset body, TMP_FontAsset medium)
+        {
+            var targets = new List<GameObject>();
+            foreach (var d in defs)
+            {
+                var found = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                    .Where(t => t.name == d.obj && t.gameObject.scene.IsValid())
+                    .OrderBy(t => (t.position - near).sqrMagnitude).ToList();
+                if (found.Count == 0)
+                {
+                    Debug.LogError("[Koks UI] Не найден объект " + d.obj + " (" + d.group + ", " + d.title + "). Откройте FirstScene.");
+                    return null;
+                }
+                if (found.Count > 1)
+                    Debug.LogWarning("[Koks UI] Объектов с именем " + d.obj + " несколько (" + found.Count + "), взят ближайший к кругу: " + found[0].position);
+                targets.Add(found[0].gameObject);
+            }
+
+            var hud = BuildHud(heading, body, medium, defs.Length);
+            hud.gameObject.name = hudName;
+
+            var markersRoot = new GameObject(markersName);
             var points = new List<InspectPoint>();
-            for (int i = 0; i < Defs.Length; i++)
+            for (int i = 0; i < defs.Length; i++)
             {
                 var go = targets[i];
                 var old = go.GetComponent<VRInspectableObject>();
@@ -101,11 +116,11 @@ namespace KoksUI.Editor
                 if (go.GetComponent<XRSimpleInteractable>() == null) go.AddComponent<XRSimpleInteractable>();
 
                 var p = go.AddComponent<InspectPoint>();
-                p.group = Defs[i].group;
-                p.title = Defs[i].title;
-                p.text = Defs[i].text;
+                p.group = defs[i].group;
+                p.title = defs[i].title;
+                p.text = defs[i].text;
                 p.hud = hud;
-                BuildMarker(markersRoot.transform, "InspectMarker_" + Defs[i].group + "_" + Defs[i].title, p);
+                BuildMarker(markersRoot.transform, "InspectMarker_" + defs[i].group + "_" + defs[i].title, p);
                 points.Add(p);
                 EditorUtility.SetDirty(p);
             }
@@ -116,12 +131,7 @@ namespace KoksUI.Editor
             if (others.Length > 0)
                 Debug.Log("[Koks UI] Старый VRInspectableObject остался на " + others.Length + " объектах: " +
                           string.Join(", ", others.Select(x => x.name)));
-
-            Selection.activeGameObject = hud.gameObject;
-            var scene = hud.gameObject.scene;
-            EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene);
-            Debug.Log("[Koks UI] Осмотр клапанов собран: " + points.Count + " точек. Тексты — на каждом объекте в компоненте Inspect Point.");
+            return hud;
         }
 
         static InspectHud BuildHud(TMP_FontAsset heading, TMP_FontAsset body, TMP_FontAsset medium, int count)

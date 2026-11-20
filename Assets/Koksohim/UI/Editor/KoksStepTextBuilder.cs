@@ -212,7 +212,10 @@ namespace KoksUI.Editor
             var flowTr = all.FirstOrDefault(t => t.name == "StepFlow" && t.parent == null);
             StepFlow flow = flowTr != null ? flowTr.GetComponent<StepFlow>() : null;
             if (flow == null) flow = new GameObject("StepFlow").AddComponent<StepFlow>();
-            flow.hideAtStart = new[] { circle3, circle4, circle2.gameObject, w3.gameObject, w4.gameObject, w2.gameObject };
+            var hide = new System.Collections.Generic.List<GameObject> { circle3, circle4, circle2.gameObject, w3.gameObject, w4.gameObject, w2.gameObject };
+            if (flow.hideAtStart != null)
+                foreach (var g in flow.hideAtStart) if (g != null && !hide.Contains(g)) hide.Add(g);   // то, что добавили другие меню, не теряем
+            flow.hideAtStart = hide.ToArray();
             EditorUtility.SetDirty(flow);
 
             circle3.SetActive(false);

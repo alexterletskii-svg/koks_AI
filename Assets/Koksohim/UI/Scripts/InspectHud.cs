@@ -115,8 +115,12 @@ namespace KoksUI
             HideAll();
         }
 
+        /// <summary>Точка осмотрена (до показа итогового окна).</summary>
+        public event System.Action<InspectPoint> PointInspected;
+
         public void NotifyInspected(InspectPoint p)
         {
+            if (PointInspected != null) PointInspected(p);
             done = 0;
             foreach (var x in points) if (x != null && x.Inspected) done++;
             Refresh();
@@ -126,10 +130,18 @@ namespace KoksUI
                 current = null;
                 HideAll();
                 onAllInspected.Invoke();
-                if (completionWindow != null) completionWindow.Show();
+                if (completionWindow != null) StartCoroutine(ShowWhenFree(completionWindow));
                 if (activateOnComplete != null)
                     foreach (var g in activateOnComplete) if (g != null) g.SetActive(true);
             }
+        }
+
+        // итоговое окно ждёт, пока закроется другое окно шага (например, «запишите в журнал»)
+        System.Collections.IEnumerator ShowWhenFree(StepWindow w)
+        {
+            yield return null;
+            while (StepWindow.AnyOpen) yield return null;
+            w.Show();
         }
 
         // полоски счётчика растягиваются под число точек (сколько бы их ни было)
