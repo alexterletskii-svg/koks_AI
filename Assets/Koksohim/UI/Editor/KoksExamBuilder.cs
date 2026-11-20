@@ -144,7 +144,7 @@ namespace KoksUI.Editor
             go.SetActive(true);
             var rt = (RectTransform)go.transform;
             rt.position = new Vector3(0f, -50f, 0f);
-            rt.localScale = Vector3.one * 0.0009f;
+            rt.localScale = Vector3.one * 0.0012f;
 
             foreach (var b in go.GetComponentsInChildren<Button>(true)) b.onClick = new Button.ButtonClickedEvent();
 

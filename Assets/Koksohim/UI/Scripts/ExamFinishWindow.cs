@@ -18,7 +18,8 @@ namespace KoksUI
         public Button finishButton;
         public Button closeButton;
         public CanvasGroup group;
-        public float distance = 1.6f;
+        public float distance = 2.2f;
+        public float heightAboveEyes = 0.15f;
         public float fadeSeconds = 0.25f;
 
         Canvas canvas;
@@ -142,7 +143,9 @@ namespace KoksUI
             Vector3 f = cam.transform.forward; f.y = 0f;
             if (f.sqrMagnitude < 0.01f) f = Vector3.forward;
             f.Normalize();
-            transform.position = cam.transform.position + f * distance;
+            Vector3 p = cam.transform.position + f * distance;
+            p.y = cam.transform.position.y + heightAboveEyes;
+            transform.position = p;
             Face(cam);
         }
 

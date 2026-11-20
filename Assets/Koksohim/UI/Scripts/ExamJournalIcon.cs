@@ -4,17 +4,17 @@ using UnityEngine.UI;
 namespace KoksUI
 {
     /// <summary>
-    /// Значок «Журнал» на экзамене: висит перед взглядом слева и следует за головой.
+    /// Значок «Журнал» на экзамене: висит в верхнем правом углу поля зрения и следует за головой.
     /// Наведите луч и нажмите триггер — открывается журнал, где результаты осмотра записываются самому.
     /// </summary>
     public class ExamJournalIcon : MonoBehaviour
     {
         public Button button;
         public JournalWindow journal;
-        [Tooltip("Где держится относительно взгляда, м: вперёд / влево / вверх (0 — на уровне глаз)")]
-        public float forward = 0.95f;
-        public float left = 0.42f;
-        public float up = 0.0f;
+        [Tooltip("Где держится относительно взгляда, м: вперёд / влево (минус — вправо) / вверх. Сейчас — верхний правый угол")]
+        public float forward = 1.0f;
+        public float left = -0.85f;
+        public float up = 0.42f;
         [Tooltip("Плавность следования за головой (больше — резче)")]
         public float follow = 9f;
 
