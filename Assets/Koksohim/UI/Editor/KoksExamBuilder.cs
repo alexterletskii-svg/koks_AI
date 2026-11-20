@@ -49,7 +49,7 @@ namespace KoksUI.Editor
             // ---- значок «Журнал»
             var journal = Object.FindFirstObjectByType<JournalWindow>(FindObjectsInactive.Include);
             if (journal == null) Debug.LogWarning("[Koks UI] В сцене нет JournalWindow: значок журнала ничего не откроет (запустите меню журнала).");
-            var jr = NewCanvas("CanvasExamJournal", 170, 190, 0.0016f, true);
+            var jr = NewCanvas("CanvasExamJournal", 170, 190, 0.0009f, true);
             var jbg = KoksUIBuilder.Img("Bg", jr.transform, KoksUIBuilder.Spr("panel_fill"), KoksUIBuilder.Hex("14191E", 0.95f), 0, 0, 170, 190);
             jbg.raycastTarget = true;
             KoksUIBuilder.Img("Frame", jr.transform, KoksUIBuilder.Spr("panel_frame"), KoksUIBuilder.Heat, 0, 0, 170, 190);
@@ -144,7 +144,7 @@ namespace KoksUI.Editor
             go.SetActive(true);
             var rt = (RectTransform)go.transform;
             rt.position = new Vector3(0f, -50f, 0f);
-            rt.localScale = Vector3.one * 0.0007f;
+            rt.localScale = Vector3.one * 0.0009f;
 
             foreach (var b in go.GetComponentsInChildren<Button>(true)) b.onClick = new Button.ButtonClickedEvent();
 

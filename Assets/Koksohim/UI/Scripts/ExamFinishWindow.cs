@@ -21,12 +21,8 @@ namespace KoksUI
         public float distance = 1.6f;
         public float fadeSeconds = 0.25f;
 
-        public float yawLag = 0.45f;
-        public float heightBelowEyes = 0.1f;
-
         Canvas canvas;
         Action onFinish, onClose;
-        float yaw, yawVel;
         bool open;
 
         public bool IsOpen { get { return open; } }
@@ -134,29 +130,25 @@ namespace KoksUI
                 if (canvas.worldCamera == null) canvas.worldCamera = cam;
                 canvas.enabled = true;
             }
-            if (cam != null)
-            {
-                Vector3 f = cam.transform.forward; f.y = 0f;
-                if (f.sqrMagnitude < 0.01f) f = Vector3.forward;
-                yaw = Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg; yawVel = 0f;
-                Follow(cam, true);
-            }
+            if (cam != null) Place(cam);
             UISound.WindowOpened();
             StopAllCoroutines();
             StartCoroutine(Fade());
         }
 
-        // окно держится перед игроком и разворачивается за ним
-        void Follow(Camera cam, bool snap)
+        // как у остальных окон: ставится один раз перед игроком и дальше только поворачивается к нему лицом
+        void Place(Camera cam)
         {
             Vector3 f = cam.transform.forward; f.y = 0f;
             if (f.sqrMagnitude < 0.01f) f = Vector3.forward;
-            float camYaw = Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg;
-            yaw = snap ? camYaw : Mathf.SmoothDampAngle(yaw, camYaw, ref yawVel, yawLag, Mathf.Infinity, Time.unscaledDeltaTime);
-            Vector3 target = cam.transform.position + Quaternion.Euler(0f, yaw, 0f) * Vector3.forward * distance;
-            target.y = cam.transform.position.y - heightBelowEyes;
-            transform.position = snap ? target : Vector3.Lerp(transform.position, target, 1f - Mathf.Exp(-10f * Time.unscaledDeltaTime));
-            Vector3 look = transform.position - cam.transform.position; look.y = 0f;
+            f.Normalize();
+            transform.position = cam.transform.position + f * distance;
+            Face(cam);
+        }
+
+        void Face(Camera cam)
+        {
+            Vector3 look = transform.position - cam.transform.position;
             if (look.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
         }
 
@@ -164,7 +156,7 @@ namespace KoksUI
         {
             if (!open) return;
             Camera cam = Camera.main;
-            if (cam != null) Follow(cam, false);
+            if (cam != null) Face(cam);
         }
 
         System.Collections.IEnumerator Fade()
