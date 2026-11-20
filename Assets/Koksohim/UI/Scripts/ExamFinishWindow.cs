@@ -13,16 +13,20 @@ namespace KoksUI
     public class ExamFinishWindow : MonoBehaviour
     {
         public Button[] roomButtons;       // 2 карточки-кнопки переходов
-        public Text[] roomTitles;          // названия комнат на карточках
+        public TMP_Text[] roomTitles;          // названия комнат на карточках
         public Image[] roomIcons;          // значки комнат
         public Button finishButton;
         public Button closeButton;
         public CanvasGroup group;
-        public float distance = 1.5f;
+        public float distance = 1.6f;
         public float fadeSeconds = 0.25f;
+
+        public float yawLag = 0.45f;
+        public float heightBelowEyes = 0.1f;
 
         Canvas canvas;
         Action onFinish, onClose;
+        float yaw, yawVel;
         bool open;
 
         public bool IsOpen { get { return open; } }
@@ -43,11 +47,10 @@ namespace KoksUI
         static void Prepare(Button b)
         {
             if (b == null) return;
-            var target = b.targetGraphic;
-            foreach (var g in b.GetComponentsInChildren<Graphic>(true))
-                if (g != target) g.raycastTarget = false;
-            var im = target as Image;
-            if (im != null) im.raycastPadding = new Vector4(-14f, -10f, -14f, -10f);
+            // клик по дочерним элементам карточки всплывает до кнопки; сама кнопка должна ловить луч
+            var own = b.GetComponent<Graphic>();
+            if (b.targetGraphic == null && own != null) b.targetGraphic = own;
+            if (own != null) own.raycastTarget = true;
         }
 
         public class Room
@@ -133,16 +136,35 @@ namespace KoksUI
             }
             if (cam != null)
             {
-                Vector3 fwd = cam.transform.forward; fwd.y = 0f;
-                if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.forward;
-                fwd.Normalize();
-                transform.position = cam.transform.position + fwd * distance;
-                Vector3 look = transform.position - cam.transform.position; look.y = 0f;
-                if (look.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
+                Vector3 f = cam.transform.forward; f.y = 0f;
+                if (f.sqrMagnitude < 0.01f) f = Vector3.forward;
+                yaw = Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg; yawVel = 0f;
+                Follow(cam, true);
             }
             UISound.WindowOpened();
             StopAllCoroutines();
             StartCoroutine(Fade());
+        }
+
+        // окно держится перед игроком и разворачивается за ним
+        void Follow(Camera cam, bool snap)
+        {
+            Vector3 f = cam.transform.forward; f.y = 0f;
+            if (f.sqrMagnitude < 0.01f) f = Vector3.forward;
+            float camYaw = Mathf.Atan2(f.x, f.z) * Mathf.Rad2Deg;
+            yaw = snap ? camYaw : Mathf.SmoothDampAngle(yaw, camYaw, ref yawVel, yawLag, Mathf.Infinity, Time.unscaledDeltaTime);
+            Vector3 target = cam.transform.position + Quaternion.Euler(0f, yaw, 0f) * Vector3.forward * distance;
+            target.y = cam.transform.position.y - heightBelowEyes;
+            transform.position = snap ? target : Vector3.Lerp(transform.position, target, 1f - Mathf.Exp(-10f * Time.unscaledDeltaTime));
+            Vector3 look = transform.position - cam.transform.position; look.y = 0f;
+            if (look.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
+        }
+
+        void LateUpdate()
+        {
+            if (!open) return;
+            Camera cam = Camera.main;
+            if (cam != null) Follow(cam, false);
         }
 
         System.Collections.IEnumerator Fade()

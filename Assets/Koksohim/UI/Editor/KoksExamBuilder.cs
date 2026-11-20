@@ -144,7 +144,7 @@ namespace KoksUI.Editor
             go.SetActive(true);
             var rt = (RectTransform)go.transform;
             rt.position = new Vector3(0f, -50f, 0f);
-            rt.localScale = Vector3.one * 0.0005f;
+            rt.localScale = Vector3.one * 0.0007f;
 
             foreach (var b in go.GetComponentsInChildren<Button>(true)) b.onClick = new Button.ButtonClickedEvent();
 
@@ -172,7 +172,7 @@ namespace KoksUI.Editor
                 var hr = (RectTransform)header;
                 hr.sizeDelta = new Vector2(1956f, 110f);
                 hr.anchoredPosition = new Vector2(-42f, 250f);
-                foreach (var tx in header.GetComponentsInChildren<Text>(true))
+                foreach (var tx in header.GetComponentsInChildren<TMP_Text>(true))
                 {
                     tx.text = "Выберите нажатием кнопки переход в другое помещение или завершите экзамен";
                     ((RectTransform)tx.transform).sizeDelta = new Vector2(1900f, 100f);
@@ -181,7 +181,7 @@ namespace KoksUI.Editor
             }
 
             // текст и значок третьей карточки
-            foreach (var tx in fin.GetComponentsInChildren<Text>(true))
+            foreach (var tx in fin.GetComponentsInChildren<TMP_Text>(true))
             {
                 if (tx.name == "KoksActionText") tx.text = "Завершить";
                 else tx.text = "Завершить экзамен и посмотреть результат";
@@ -196,7 +196,7 @@ namespace KoksUI.Editor
 
             var win = go.AddComponent<ExamFinishWindow>();
             win.roomButtons = new[] { top.GetComponent<Button>(), bottom.GetComponent<Button>() };
-            win.roomTitles = new[] { Find(top, "Text (Legacy)").GetComponent<Text>(), Find(bottom, "Text (Legacy)").GetComponent<Text>() };
+            win.roomTitles = new[] { Find(top, "Text (Legacy)").GetComponent<TMP_Text>(), Find(bottom, "Text (Legacy)").GetComponent<TMP_Text>() };
             win.roomIcons = new[] { Find(top, "KoksIcon").GetComponent<Image>(), Find(bottom, "KoksIcon").GetComponent<Image>() };
             win.finishButton = fin.GetComponent<Button>();
             win.closeButton = exit.GetComponent<Button>();
