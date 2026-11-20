@@ -211,6 +211,9 @@ namespace KoksUI
 
             if (condensate == null)
                 foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    if (t.name == "CondensateCollector") { condensate = t; break; }
+            if (condensate == null)
+                foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                     if (t.name.IndexOf("ondensat", System.StringComparison.OrdinalIgnoreCase) >= 0 && t.GetComponentInChildren<Renderer>() != null) { condensate = t; break; }
             if (condensate == null)
             {
@@ -312,6 +315,25 @@ namespace KoksUI
             return false;
         }
 
+        // взгляд: центр модели почти по центру поля зрения, не дальше 6 м и не за стеной
+        static bool GazeAt(Transform root, Bounds b)
+        {
+            Camera cam = Camera.main;
+            if (cam == null) return false;
+            Transform c = cam.transform;
+            Vector3 to = b.center - c.position;
+            float dist = to.magnitude;
+            if (dist > 6f || Vector3.Angle(c.forward, to) > 12f) return false;
+            RaycastHit hit;
+            if (FirstHit(c, out hit))
+            {
+                Transform h = hit.collider.transform;
+                if (h == root || h.IsChildOf(root)) return true;
+                if (hit.distance < dist - b.extents.magnitude - 0.5f) return false;   // заслонено
+            }
+            return true;
+        }
+
         static Bounds BoundsOf(Renderer[] rs, Vector3 fallback)
         {
             if (rs == null || rs.Length == 0) return new Bounds(fallback, Vector3.one * 0.3f);
@@ -407,10 +429,11 @@ namespace KoksUI
                     if (cand.held >= inspectSeconds) Complete(cand);
                 }
 
-                // конденсатоотводчик: держать на нём луч 3 секунды (взгляд без луча не считается)
+                // конденсатоотводчик (CondensateCollector): как в обучении — посмотреть на него 3 секунды (или навести луч)
                 if (!done[Condensate] && condensate != null)
                 {
-                    bool look = RayAt(condensate, null, BoundsOf(condensate.GetComponentsInChildren<Renderer>(), condensate.position));
+                    Bounds cb = BoundsOf(condensate.GetComponentsInChildren<Renderer>(), condensate.position);
+                    bool look = GazeAt(condensate, cb) || RayAt(condensate, null, cb);
                     condHeld = look ? condHeld + dt : Mathf.Max(0f, condHeld - dt * 1.5f);
                     if (cand == null && condHeld > 0f) ring = Mathf.Max(ring, condHeld / condensateSeconds);
                     if (condHeld >= condensateSeconds) { done[Condensate] = true; Debug.Log("[Exam] конденсатоотводчик осмотрен"); }
