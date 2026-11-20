@@ -60,6 +60,9 @@ namespace KoksUI.Editor
             var srcLayer = panel.Find("Respirator");
             if (content == null || srcRow == null || srcLayer == null) { Debug.LogError("[Koks UI] Не нашёл строку или слой Respirator в PanelSiz."); return; }
 
+            // писк газоанализатора относится к FirstScene, в меню его быть не должно
+            var strayBeep = all.FirstOrDefault(t => t.name == "GasAnalyzerBeep"); if (strayBeep != null) Object.DestroyImmediate(strayBeep.gameObject);
+
             // прошлая сборка
             var oldRow = content.Find("GasAnalyzer"); if (oldRow != null) Object.DestroyImmediate(oldRow.gameObject);
             var oldLayer = panel.Find("GasAnalyzer"); if (oldLayer != null) Object.DestroyImmediate(oldLayer.gameObject);

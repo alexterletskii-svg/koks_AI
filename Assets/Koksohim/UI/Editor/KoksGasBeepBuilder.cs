@@ -12,6 +12,15 @@ namespace KoksUI.Editor
         public static void Build()
         {
             if (EditorApplication.isPlaying) { Debug.LogError("[Koks UI] Остановите Play."); return; }
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            string back = EditorSceneManager.GetActiveScene().path;
+            if (!EditorSceneManager.GetActiveScene().path.EndsWith("FirstScene.unity"))
+                EditorSceneManager.OpenScene("Assets/Scenes/FirstScene.unity", OpenSceneMode.Single);
+            Run();
+        }
+
+        static void Run()
+        {
             var all = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             var old = all.FirstOrDefault(t => t.name == "GasAnalyzerBeep");
             if (old != null) Object.DestroyImmediate(old.gameObject);
