@@ -100,11 +100,16 @@ namespace KoksUI
         // маркер рисуется поверх геометрии: его не закрывают крышки и корпус
         void MakeMarkerVisibleThroughGeometry()
         {
-            foreach (var g in marker.GetComponentsInChildren<Graphic>(true)) g.material = UIDepth.ImageMaterial;
+            foreach (var g in marker.GetComponentsInChildren<Graphic>(true))
+            {
+                g.material = UIDepth.MarkerMaterial;
+                g.raycastTarget = false;    // ромбик не должен перехватывать луч у кнопок окна
+            }
         }
 
         void OnHoverEnter(HoverEnterEventArgs args)
         {
+            if (hud != null && !hud.Active) return;   // осмотр ещё не начат
             hovered = true;
             if (debugLog) Debug.Log("[Inspect] наведение: " + name + " (" + group + ", " + title + ")");
             if (hud == null) return;
@@ -121,7 +126,7 @@ namespace KoksUI
 
         void Update()
         {
-            if (hud == null || Inspected) return;
+            if (hud == null || Inspected || !hud.Active) return;
             float fill = Mathf.Max(0.1f, fillSeconds);
             if (hovered)
             {
@@ -141,6 +146,9 @@ namespace KoksUI
         void LateUpdate()
         {
             if (marker == null) return;
+            // маркеры видны только пока идёт осмотр и пока на экране нет окон шага
+            bool show = hud == null || (hud.Active && !hud.AllDone && !StepWindow.AnyOpen);
+            if (marker.gameObject.activeSelf != show) marker.gameObject.SetActive(show);
             Camera cam = Camera.main;
             UpdateMarkerPosition();
             if (cam != null) marker.rotation = cam.transform.rotation;

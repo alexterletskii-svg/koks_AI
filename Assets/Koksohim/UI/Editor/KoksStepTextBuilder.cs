@@ -86,6 +86,9 @@ namespace KoksUI.Editor
                 w.buttonText = "Приступить к осмотру";
                 w.Apply();
                 EditorUtility.SetDirty(w);
+                // маркеры осмотра появятся только после «Приступить к осмотру» в этом окне
+                hud.startWindow = w;
+                EditorUtility.SetDirty(hud);
             }
 
             // окно «Клапаны осмотрены»: текст под шесть точек

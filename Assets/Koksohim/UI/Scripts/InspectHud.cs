@@ -24,6 +24,8 @@ namespace KoksUI
         [Header("Когда осмотрены все точки")]
         [Tooltip("Окно, которое покажется (например, «Клапаны осмотрены»)")]
         public StepWindow completionWindow;
+        [Tooltip("Окно, после «Приступить к осмотру» в котором начинается осмотр (окно шага 1). Пока его не закрыли, маркеры скрыты. Пусто — осмотр доступен сразу.")]
+        public StepWindow startWindow;
         [Tooltip("Объекты, которые включатся (например, следующий синий круг)")]
         public GameObject[] activateOnComplete;
 
@@ -55,6 +57,8 @@ namespace KoksUI
             // то, что должно появиться после осмотра, скрыто до этого момента
             if (activateOnComplete != null)
                 foreach (var g in activateOnComplete) if (g != null) g.SetActive(false);
+            Active = startWindow == null;
+            if (startWindow != null) startWindow.onConfirmed.AddListener(Begin);
             LayoutSegments();
             UIDepth.AlwaysOnTop(gameObject);
             HideAll();
@@ -67,6 +71,11 @@ namespace KoksUI
         }
 
         public bool AllDone { get { return allFired; } }
+
+        /// <summary>Осмотр начат (игрок нажал «Приступить к осмотру»).</summary>
+        public bool Active { get; private set; }
+
+        public void Begin() { Active = true; }
 
         public int Total { get { return points.Count; } }
         public int Done { get { return done; } }

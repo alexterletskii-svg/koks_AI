@@ -63,6 +63,10 @@ namespace KoksUI
         [Tooltip("Окно закроется само через это число секунд (как после нажатия кнопки). 0 — только по кнопке. Для окон с «Приступить к осмотру» оставляйте 0.")]
         public float autoConfirmSeconds = 0f;
 
+        static int openCount;
+        /// <summary>Сейчас на экране есть окно шага (маркеры осмотра в это время скрываются).</summary>
+        public static bool AnyOpen { get { return openCount > 0; } }
+
         Coroutine fade;
         Coroutine autoTimer;
         Canvas canvas;
@@ -76,6 +80,8 @@ namespace KoksUI
 
         void Wire()
         {
+            SoftenHover(confirmButton);
+            SoftenHover(backButton);
             if (wired || confirmButton == null) return;
             confirmButton.onClick.AddListener(OnConfirmClicked);
             if (backButton != null) backButton.onClick.AddListener(OnBackClicked);
@@ -159,6 +165,7 @@ namespace KoksUI
         {
             if (open) return;
             open = true;
+            openCount++;
             page = 0;
             Apply();
             if (canvas == null) canvas = GetComponent<Canvas>();
@@ -174,6 +181,15 @@ namespace KoksUI
             if (autoTimer != null) StopCoroutine(autoTimer);
             if (autoConfirmSeconds > 0f) autoTimer = StartCoroutine(AutoConfirm());
             onShown.Invoke();
+        }
+
+        // при наведении кнопка светлеет до тёплого жёлтого, а не белого
+        static void SoftenHover(Button b)
+        {
+            if (b == null) return;
+            var cb = b.colors;
+            cb.highlightedColor = new Color(1f, 0.87f, 0.45f, 1f);
+            b.colors = cb;
         }
 
         IEnumerator AutoConfirm()
@@ -247,6 +263,7 @@ namespace KoksUI
             {
                 // объект не выключаем (выключение канваса с XR-рейкастером даёт ошибку) — просто скрываем канвас
                 open = false;
+                openCount = Mathf.Max(0, openCount - 1);
                 if (canvas != null) canvas.enabled = false;
             }
             fade = null;

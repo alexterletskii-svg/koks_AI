@@ -11,6 +11,7 @@ namespace KoksUI
     public static class UIDepth
     {
         static Material image;
+        static Material markerMat;
         static Shader overlayText;
 
         /// <summary>Материал для картинок интерфейса, рисуемых поверх геометрии.</summary>
@@ -30,6 +31,20 @@ namespace KoksUI
                     image = new Material(sh);
                 }
                 return image;
+            }
+        }
+
+        /// <summary>Материал маркеров осмотра: поверх геометрии, но ниже окон по очереди отрисовки.</summary>
+        public static Material MarkerMaterial
+        {
+            get
+            {
+                if (markerMat == null)
+                {
+                    markerMat = new Material(ImageMaterial);
+                    markerMat.renderQueue = 3500;
+                }
+                return markerMat;
             }
         }
 
