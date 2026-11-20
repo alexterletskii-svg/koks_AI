@@ -49,7 +49,7 @@ namespace KoksUI.Editor
             // ---- значок «Журнал»
             var journal = Object.FindFirstObjectByType<JournalWindow>(FindObjectsInactive.Include);
             if (journal == null) Debug.LogWarning("[Koks UI] В сцене нет JournalWindow: значок журнала ничего не откроет (запустите меню журнала).");
-            var jr = NewCanvas("CanvasExamJournal", 170, 190, 0.0012f, true);
+            var jr = NewCanvas("CanvasExamJournal", 170, 190, 0.0006f, true);
             var jbg = KoksUIBuilder.Img("Bg", jr.transform, KoksUIBuilder.Spr("panel_fill"), KoksUIBuilder.Hex("14191E", 0.95f), 0, 0, 170, 190);
             jbg.raycastTarget = true;
             KoksUIBuilder.Img("Frame", jr.transform, KoksUIBuilder.Spr("panel_frame"), KoksUIBuilder.Heat, 0, 0, 170, 190);
@@ -62,47 +62,13 @@ namespace KoksUI.Editor
             jicon.button = jbtn;
             jicon.journal = journal;
 
-            // ---- окно по ручке двери: 2 перехода + «Завершить экзамен»
-            const float FW = 1028f, FH = 408f;
-            var fg = NewCanvas("CanvasExamFinish", FW, FH, 0.001f, true);
-            var ft = fg.transform;
-            KoksUIBuilder.Img("PanelFill", ft, KoksUIBuilder.Spr("panel_fill"), KoksUIBuilder.Hex("14191E", 0.96f), 0, 0, FW, FH);
-            KoksUIBuilder.Img("Hazard", ft, KoksUIBuilder.Spr("hazard"), Color.white, 0, 0, 260, 10, Image.Type.Simple);
-            KoksUIBuilder.Img("PanelFrame", ft, KoksUIBuilder.Spr("panel_frame"), new Color(1f, 1f, 1f, 0.16f), 0, 0, FW, FH);
-            KoksUIBuilder.Txt("Title", ft, "Выберите действие", heading, 40, Color.white, TextAlignmentOptions.MidlineLeft, 28, 28, 800, 56);
-            var cardColor = KoksUIBuilder.Hex("1B2127");
-            var roomBtns = new Button[2];
-            var roomTitles = new TMP_Text[2];
-            var roomCards = new GameObject[2];
-            for (int i = 0; i < 3; i++)
-            {
-                float x = 28f + i * 336f;
-                var cardImg = KoksUIBuilder.Img("Card" + (i + 1), ft, KoksUIBuilder.Spr("chip"), cardColor, x, 104f, 300f, 276f);
-                KoksUIBuilder.Img("Stripe", cardImg.transform, KoksUIBuilder.Spr("hazard"), Color.white, 0, 0, 120, 8, Image.Type.Simple);
-                bool fin = i == 2;
-                var title = KoksUIBuilder.Txt("Title", cardImg.transform, fin ? "Завершить экзамен и посмотреть результат" : "Помещение", medium, 28, Color.white, TextAlignmentOptions.TopLeft, 18, 26, 264, 130);
-                var bi = KoksUIBuilder.Img(fin ? "FinishButton" : "RoomButton", cardImg.transform, KoksUIBuilder.Spr(fin ? "btn_heat" : "btn_outline"), Color.white, 18, 180, 264, 74);
-                bi.raycastTarget = true;
-                var bb = bi.gameObject.AddComponent<Button>();
-                bb.targetGraphic = bi;
-                bb.colors = fin
-                    ? KoksUIBuilder.Tint(KoksUIBuilder.Heat, KoksUIBuilder.HeatHi, KoksUIBuilder.Hex("E0AB00"), KoksUIBuilder.Hex("6B6F73"))
-                    : KoksUIBuilder.Tint(new Color(1f, 1f, 1f, 0.5f), Color.white, new Color(0.8f, 0.8f, 0.8f, 1f), new Color(1f, 1f, 1f, 0.2f));
-                KoksUIBuilder.Txt("Label", bi.transform, fin ? "Завершить" : "Перейти", heading, 30, fin ? KoksUIBuilder.Dark : Color.white, TextAlignmentOptions.Center, 0, 0, 264, 74);
-                if (fin) { finishBtnRef = bb; }
-                else { roomBtns[i] = bb; roomTitles[i] = title; roomCards[i] = cardImg.gameObject; }
-            }
-            var xImg = KoksUIBuilder.Img("CloseButton", ft, KoksUIBuilder.Spr("chip"), KoksUIBuilder.Hex("2A3138"), FW - 28f - 56f, 24f, 56f, 56f);
-            xImg.raycastTarget = true;
-            var xBtn = xImg.gameObject.AddComponent<Button>();
-            xBtn.targetGraphic = xImg;
-            xBtn.colors = KoksUIBuilder.Tint(Color.white, new Color(1f, 0.93f, 0.6f, 1f), new Color(0.8f, 0.7f, 0.2f, 1f), Color.gray);
-            KoksUIBuilder.Txt("Label", xImg.transform, "X", heading, 30, Color.white, TextAlignmentOptions.Center, 0, 0, 56, 56);
-            var fwin = fg.AddComponent<ExamFinishWindow>();
-            fwin.roomButtons = roomBtns; fwin.roomTitles = roomTitles; fwin.roomCards = roomCards;
-            fwin.finishButton = finishBtnRef; fwin.closeButton = xBtn;
-            fwin.group = fg.GetComponent<CanvasGroup>();
-            fg.GetComponent<Canvas>().enabled = false;
+            // ---- окно по ручке двери: копия обычного окна перехода (CanvasExit) с тремя карточками
+            GameObject exitSrc = null;
+            foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (t != null && t.name == "CanvasExit") { exitSrc = t.gameObject; break; }
+            ExamFinishWindow fwin = null;
+            if (exitSrc == null) Debug.LogError("[Koks UI] В сцене нет CanvasExit (обычное окно перехода): окно выхода из экзамена не создано.");
+            else fwin = BuildExitCopy(exitSrc);
 
             // ---- итоговое окно
             const float W = 700f;
@@ -170,7 +136,80 @@ namespace KoksUI.Editor
             Debug.Log("[Koks UI] Экзамен собран: ExamController, CanvasExamRing, CanvasExamJournal, CanvasExamResult. Проверьте, что в сцене есть объект door.004.");
         }
 
-        static Button finishBtnRef;
+        static ExamFinishWindow BuildExitCopy(GameObject src)
+        {
+            var go = Object.Instantiate(src);
+            go.name = "CanvasExamFinish";
+            go.transform.SetParent(null, false);
+            go.SetActive(true);
+            var rt = (RectTransform)go.transform;
+            rt.position = new Vector3(0f, -50f, 0f);
+            rt.localScale = Vector3.one * 0.0005f;
+
+            foreach (var b in go.GetComponentsInChildren<Button>(true)) b.onClick = new Button.ButtonClickedEvent();
+
+            Transform top = Find(go.transform, "ButtonTop"), bottom = Find(go.transform, "ButtonBottom"), exit = Find(go.transform, "ButtonExit");
+            var header = Find(go.transform, "Image");
+            if (top == null || bottom == null || exit == null)
+            {
+                Debug.LogError("[Koks UI] В CanvasExit не нашлись ButtonTop / ButtonBottom / ButtonExit.");
+                return null;
+            }
+
+            // третья карточка — копия второй
+            var fin = Object.Instantiate(bottom.gameObject, bottom.parent, false);
+            fin.name = "ButtonFinish";
+            foreach (var b in fin.GetComponentsInChildren<Button>(true)) b.onClick = new Button.ButtonClickedEvent();
+
+            const float W = 2150f;
+            rt.sizeDelta = new Vector2(W, 750f);
+            ((RectTransform)top).anchoredPosition = new Vector2(-700f, -60f);
+            ((RectTransform)bottom).anchoredPosition = new Vector2(0f, -60f);
+            ((RectTransform)fin.transform).anchoredPosition = new Vector2(700f, -60f);
+            ((RectTransform)exit).anchoredPosition = new Vector2(W / 2f - 80f, 305f);
+            if (header != null)
+            {
+                var hr = (RectTransform)header;
+                hr.sizeDelta = new Vector2(1956f, 110f);
+                hr.anchoredPosition = new Vector2(-42f, 250f);
+                foreach (var tx in header.GetComponentsInChildren<Text>(true))
+                {
+                    tx.text = "Выберите нажатием кнопки переход в другое помещение или завершите экзамен";
+                    ((RectTransform)tx.transform).sizeDelta = new Vector2(1900f, 100f);
+                }
+                var acc = Find(header, "KoksAccent");
+            }
+
+            // текст и значок третьей карточки
+            foreach (var tx in fin.GetComponentsInChildren<Text>(true))
+            {
+                if (tx.name == "KoksActionText") tx.text = "Завершить";
+                else tx.text = "Завершить экзамен и посмотреть результат";
+            }
+            var finIcon = Find(fin.transform, "KoksIcon");
+            if (finIcon != null)
+            {
+                var im = finIcon.GetComponent<Image>();
+                var sp = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Koksohim/UI/Sprites/icon_mode_exam.png");
+                if (im != null && sp != null) im.sprite = sp;
+            }
+
+            var win = go.AddComponent<ExamFinishWindow>();
+            win.roomButtons = new[] { top.GetComponent<Button>(), bottom.GetComponent<Button>() };
+            win.roomTitles = new[] { Find(top, "Text (Legacy)").GetComponent<Text>(), Find(bottom, "Text (Legacy)").GetComponent<Text>() };
+            win.roomIcons = new[] { Find(top, "KoksIcon").GetComponent<Image>(), Find(bottom, "KoksIcon").GetComponent<Image>() };
+            win.finishButton = fin.GetComponent<Button>();
+            win.closeButton = exit.GetComponent<Button>();
+            win.group = go.GetComponent<CanvasGroup>() != null ? go.GetComponent<CanvasGroup>() : go.AddComponent<CanvasGroup>();
+            go.GetComponent<Canvas>().enabled = false;
+            return win;
+        }
+
+        static Transform Find(Transform root, string name)
+        {
+            foreach (var t in root.GetComponentsInChildren<Transform>(true)) if (t.name == name) return t;
+            return null;
+        }
 
         static GameObject NewCanvas(string name, float w, float h, float scale, bool raycaster)
         {

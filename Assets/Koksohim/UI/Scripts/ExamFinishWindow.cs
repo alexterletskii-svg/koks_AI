@@ -7,19 +7,18 @@ using UnityEngine.UI;
 namespace KoksUI
 {
     /// <summary>
-    /// Окно по ручке двери в экзамене: три карточки — «перейти в одну комнату», «перейти в другую», «завершить экзамен».
-    /// Кнопки переходов повторяют кнопки обычного окна перехода (CanvasExit): названия берутся оттуда,
-    /// нажатие вызывает те же действия. Собирается скриптом Koks → Build UI → 20.
+    /// Окно по ручке двери в экзамене: копия обычного окна перехода (CanvasExit), три карточки — диспетчерская,
+    /// комната лебёдок, «завершить экзамен». Названия и значки переходов берутся из обычных окон, нажатие вызывает те же действия. Собирается скриптом Koks → Build UI → 20.
     /// </summary>
     public class ExamFinishWindow : MonoBehaviour
     {
-        public Button[] roomButtons;       // 2 кнопки «Перейти»
-        public TMP_Text[] roomTitles;      // 2 названия комнат
-        public GameObject[] roomCards;     // 2 карточки (скрываются, если переходов меньше)
+        public Button[] roomButtons;       // 2 карточки-кнопки переходов
+        public Text[] roomTitles;          // названия комнат на карточках
+        public Image[] roomIcons;          // значки комнат
         public Button finishButton;
         public Button closeButton;
         public CanvasGroup group;
-        public float distance = 1.4f;
+        public float distance = 1.5f;
         public float fadeSeconds = 0.25f;
 
         Canvas canvas;
@@ -51,73 +50,76 @@ namespace KoksUI
             if (im != null) im.raycastPadding = new Vector4(-14f, -10f, -14f, -10f);
         }
 
-        static string LabelOf(Component c)
+        public class Room
         {
-            var t = c.GetComponentInChildren<TMP_Text>(true);
-            if (t != null) return t.text;
-            var u = c.GetComponentInChildren<Text>(true);
+            public Button button;
+            public string title;
+            public Sprite icon;
+        }
+
+        static string TextOf(Component c)
+        {
+            var tm = c as TMP_Text;
+            if (tm != null) return tm.text;
+            var u = c as Text;
             return u != null ? u.text : "";
         }
 
-        /// <summary>Кнопки переходов из обычного окна перехода: у каждой берём подпись карточки.</summary>
-        public static List<KeyValuePair<Button, string>> ReadRooms(GameObject legacyCanvas)
+        /// <summary>Все переходы из обычных окон перехода (CanvasExit): кнопка-карточка, название и значок комнаты.</summary>
+        public static List<Room> ReadRooms(IEnumerable<GameObject> legacyCanvases)
         {
-            var res = new List<KeyValuePair<Button, string>>();
-            var buttons = new List<Button>(legacyCanvas.GetComponentsInChildren<Button>(true));
-            var go = new List<Button>();
-            foreach (var b in buttons)
+            var res = new List<Room>();
+            foreach (var cv in legacyCanvases)
             {
-                string l = (LabelOf(b) ?? "").Trim();
-                if (l.IndexOf("ерейти", StringComparison.OrdinalIgnoreCase) >= 0) go.Add(b);
-            }
-            if (go.Count == 0)
-                foreach (var b in buttons) if ((LabelOf(b) ?? "").Trim().Length > 1) go.Add(b);
-
-            // подписи: текст, не лежащий внутри кнопок, ближайший к кнопке по горизонтали (над ней)
-            var texts = new List<Component>();
-            foreach (var t in legacyCanvas.GetComponentsInChildren<TMP_Text>(true))
-                if (t.GetComponentInParent<Button>() == null && !string.IsNullOrWhiteSpace(t.text)) texts.Add(t);
-            foreach (var t in legacyCanvas.GetComponentsInChildren<Text>(true))
-                if (t.GetComponentInParent<Button>() == null && !string.IsNullOrWhiteSpace(t.text)) texts.Add(t);
-
-            foreach (var b in go)
-            {
-                Vector3 bl = legacyCanvas.transform.InverseTransformPoint(b.transform.position);
-                string best = "Перейти"; float bestScore = float.MaxValue;
-                foreach (var tc in texts)
+                if (cv == null) continue;
+                foreach (var b in cv.GetComponentsInChildren<Button>(true))
                 {
-                    Vector3 tl = legacyCanvas.transform.InverseTransformPoint(tc.transform.position);
-                    float dx = Mathf.Abs(tl.x - bl.x), dy = bl.y - tl.y;   // подпись выше кнопки
-                    if (dy < -0.0001f) continue;
-                    float score = dx * 3f + Mathf.Abs(dy);
-                    if (score < bestScore)
-                    {
-                        bestScore = score;
-                        var tm = tc as TMP_Text;
-                        best = tm != null ? tm.text : ((Text)tc).text;
-                    }
+                    // название — самый длинный текст внутри карточки; у кнопки «X» названия нет
+                    string best = "";
+                    foreach (var t in b.GetComponentsInChildren<Text>(true)) if (t.text != null && t.text.Trim().Length > best.Length) best = t.text.Trim();
+                    foreach (var t in b.GetComponentsInChildren<TMP_Text>(true)) if (t.text != null && t.text.Trim().Length > best.Length) best = t.text.Trim();
+                    if (best.Length < 8) continue;
+                    Sprite icon = null;
+                    foreach (var im in b.GetComponentsInChildren<Image>(true))
+                        if (im.name == "KoksIcon") { icon = im.sprite; break; }
+                    res.Add(new Room { button = b, title = best, icon = icon });
                 }
-                res.Add(new KeyValuePair<Button, string>(b, best));
             }
-            // слева направо
-            res.Sort((a, b2) => legacyCanvas.transform.InverseTransformPoint(a.Key.transform.position).x
-                .CompareTo(legacyCanvas.transform.InverseTransformPoint(b2.Key.transform.position).x));
             return res;
         }
 
-        public void Show(List<KeyValuePair<Button, string>> rooms, Action finish, Action close)
+        static Room Find(List<Room> rooms, string needleA, string needleB)
+        {
+            foreach (var r in rooms)
+            {
+                string t = r.title.ToLowerInvariant();
+                if (t.Contains(needleA) || (needleB != null && t.Contains(needleB))) return r;
+            }
+            return null;
+        }
+
+        public void Show(List<Room> all, Action finish, Action close)
         {
             if (open) return;
             open = true;
             onFinish = finish; onClose = close;
 
+            // карточки: диспетчерская и комната лебёдок (если названия не нашлись — первые найденные переходы)
+            var chosen = new List<Room>();
+            var disp = Find(all, "диспетчер", null);
+            var winch = Find(all, "лебедок", "лебёдок");
+            if (disp != null) chosen.Add(disp);
+            if (winch != null) chosen.Add(winch);
+            foreach (var r in all) { if (chosen.Count >= 2) break; if (!chosen.Contains(r)) chosen.Add(r); }
+
             for (int i = 0; roomButtons != null && i < roomButtons.Length; i++)
             {
-                bool has = rooms != null && i < rooms.Count;
-                if (roomCards != null && i < roomCards.Length && roomCards[i] != null) roomCards[i].SetActive(has);
+                bool has = i < chosen.Count;
+                roomButtons[i].gameObject.SetActive(has);
                 if (!has) continue;
-                if (roomTitles != null && i < roomTitles.Length && roomTitles[i] != null) roomTitles[i].text = rooms[i].Value;
-                var legacy = rooms[i].Key;
+                if (roomTitles != null && i < roomTitles.Length && roomTitles[i] != null) roomTitles[i].text = chosen[i].title;
+                if (roomIcons != null && i < roomIcons.Length && roomIcons[i] != null && chosen[i].icon != null) roomIcons[i].sprite = chosen[i].icon;
+                var legacy = chosen[i].button;
                 roomButtons[i].onClick.RemoveAllListeners();
                 roomButtons[i].onClick.AddListener(() => { Close(); legacy.onClick.Invoke(); });
             }

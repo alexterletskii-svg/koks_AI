@@ -292,7 +292,7 @@ namespace KoksUI
             foreach (var ec in exitCanvases)
             {
                 if (ec == null || !ec.activeSelf) continue;
-                var rooms = ExamFinishWindow.ReadRooms(ec);
+                var rooms = ExamFinishWindow.ReadRooms(exitCanvases);
                 ec.SetActive(false);
                 if (Time.unscaledTime < finishCooldown) continue;
                 if (finishWindow != null && !finishWindow.IsOpen)
