@@ -28,13 +28,6 @@ namespace KoksUI
 
         void Start()
         {
-            foreach (var ip in FindObjectsByType<InspectPoint>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                if ((ip.group ?? "").StartsWith("Конденсат"))
-                {
-                    Debug.Log("[Training] шаг 9: есть обычная точка осмотра с ромбиком, таймер-замена не нужна");
-                    enabled = false;
-                    return;
-                }
             foreach (var w in FindObjectsByType<StepWindow>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (w.name == "CanvasStep9") { window = w; break; }
             foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))

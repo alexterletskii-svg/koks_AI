@@ -67,7 +67,6 @@ namespace KoksUI
         static int openCount;
         /// <summary>Сейчас на экране есть окно шага (маркеры осмотра в это время скрываются).</summary>
         public static bool AnyOpen { get { return openCount > 0; } }
-        public static int OpenCount { get { return openCount; } }
 
         /// <summary>Другое окно (журнал) сообщает, что оно открыто/закрыто — маркеры осмотра на это время скрываются.</summary>
         public static void ExternalOpen(bool opened)
