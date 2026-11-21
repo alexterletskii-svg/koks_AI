@@ -103,7 +103,7 @@ namespace KoksUI
         void UpdateMarkerPosition()
         {
             if (anchor != null)
-                MarkerPosition = anchor.position + markerOffset;
+                MarkerPosition = anchor.position;     // смещение markerOffset от сборки (для длинных мешей) к якорю не относится
             else if (rends == null || rends.Length == 0)
                 MarkerPosition = transform.position + Vector3.up * markerGap + markerOffset;
             else
@@ -122,7 +122,7 @@ namespace KoksUI
                 if (cam != null)
                 {
                     Vector3 to = cam.transform.position - pos;
-                    if (to.sqrMagnitude > 0.01f) pos += to.normalized * Mathf.Min(markerPull, to.magnitude * 0.5f);
+                    if (to.sqrMagnitude > 0.01f) pos += to.normalized * Mathf.Min(anchor != null ? Mathf.Min(markerPull, 0.3f) : markerPull, to.magnitude * 0.5f);
                 }
                 marker.position = pos;
             }
