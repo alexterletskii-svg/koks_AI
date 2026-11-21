@@ -76,11 +76,7 @@ namespace KoksUI
 
         void Start()
         {
-            if (anchor == null && (group ?? "").StartsWith("Конденсат"))
-            {
-                var go = GameObject.Find("ExamCondensateTarget");
-                if (go != null) anchor = go.transform;
-            }
+            if (anchor == null) anchor = ResolveAnchor(group);
             var own = GetComponent<Renderer>();
             rends = own != null ? new[] { own } : GetComponentsInChildren<Renderer>();
             UpdateMarkerPosition();
@@ -91,6 +87,21 @@ namespace KoksUI
                 MakeMarkerVisibleThroughGeometry();
             }
             SetMarkerState();
+        }
+
+        /// <summary>
+        /// Соглашение об именах: для групп с огромным коллайдером ромбик и осмотр привязаны к пустому объекту в сцене.
+        /// Обезграфичивание → CoverTarget_obezgr, конденсатоотводчик → ExamCondensateTarget.
+        /// </summary>
+        public static Transform ResolveAnchor(string group)
+        {
+            string g = group ?? "";
+            string n = null;
+            if (g.StartsWith("Конденсат")) n = "ExamCondensateTarget";
+            else if (g.StartsWith("Обезграф")) n = "CoverTarget_obezgr";
+            if (n == null) return null;
+            var go = GameObject.Find(n);
+            return go != null ? go.transform : null;
         }
 
         // объект может двигаться анимацией — маркер едет вместе с ним

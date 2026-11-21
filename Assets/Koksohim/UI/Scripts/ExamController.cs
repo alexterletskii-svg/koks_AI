@@ -36,6 +36,8 @@ namespace KoksUI
         public Transform condensateTarget;
         [Tooltip("Радиус зоны вокруг точки конденсатоотводчика, в которой луч считается наведённым, м")]
         public float condensateRadius = 0.6f;
+        [Tooltip("Радиус наведения луча на точку-якорь (CoverTarget_obezgr и т.п.), м")]
+        public float anchorRadius = 0.5f;
         public DrainValve drain;
         public JournalWindow journal;
         public ArrivalTrigger tunnelTrigger;
@@ -76,11 +78,13 @@ namespace KoksUI
 
         ScenarioDefinition sc;
         int ppeIdx, journalIdx, drainIdx, condIdx;
+        bool condHasPoints;
 
         class Pt
         {
             public InspectPoint ip;
             public XRSimpleInteractable xi;
+            public Transform anchor;
             public Renderer[] rends;
             public int task;
             public bool done, locked, isDrain;
@@ -173,13 +177,16 @@ namespace KoksUI
                 int task = TaskOf(ip);
                 ip.enabled = false;
                 if (ip.marker != null) ip.marker.gameObject.SetActive(false);
-                if (task < 0 || sc.tasks[task].kind == TaskKind.RayPoint) continue;   // осмотр точки лучом считается отдельно (коллайдер детали на весь тоннель)
+                if (task < 0) continue;
                 var p = new Pt { ip = ip, task = task, isDrain = task == drainIdx };
                 p.xi = ip.GetComponent<XRSimpleInteractable>();
+                p.anchor = ip.anchor != null ? ip.anchor : InspectPoint.ResolveAnchor(ip.group);
                 p.rends = ip.GetComponentsInChildren<Renderer>();
                 pts.Add(p);
                 if (p.isDrain) drainPt = p;
             }
+            condHasPoints = false;
+            foreach (var q in pts) if (q.task == condIdx) condHasPoints = true;   // есть обычная точка осмотра — запасной счёт по лучу не нужен
             // какие детали входят в задания (для проверки в Console)
             for (int t = 0; t < sc.Count; t++)
             {
@@ -369,6 +376,7 @@ namespace KoksUI
 
         bool IsAimed(Pt p)
         {
+            if (p.anchor != null) return RayNearPoint(p.anchor.position, anchorRadius);   // деталь с огромным коллайдером: только луч у точки
             if (p.xi != null && p.xi.isHovered)
                 foreach (var r in rays ?? new XRRayInteractor[0]) if (RayVisible(r)) return true;
             return RayAt(p.ip.transform, p.xi != null ? p.xi.colliders.ToArray() : null, BoundsOf(p));
@@ -443,7 +451,7 @@ namespace KoksUI
                 }
 
                 // конденсатоотводчик: держать луч на точке ExamCondensateTarget 3 секунды
-                if (condIdx >= 0 && !done[condIdx] && (condensate != null || condensateTarget != null))
+                if (condIdx >= 0 && !condHasPoints && !done[condIdx] && (condensate != null || condensateTarget != null))
                 {
                     bool look;
                     if (condensateTarget != null) look = RayNearPoint(condensateTarget.position, condensateRadius);

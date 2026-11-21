@@ -254,12 +254,30 @@ namespace KoksUI.Editor
             dv.activateAfter = new[] { circle9 };
             EditorUtility.SetDirty(dv);
 
-            // ===== шаг 9: визуальный осмотр конденсатоотводчика по таймеру, затем итог и выход в меню =====
+            // ===== шаг 9: осмотр конденсатоотводчика ромбиком (как остальные точки), затем итог и выход в меню =====
+            var coll = FindT("CondensateCollector");
+            if (coll == null) { Debug.LogError("[Koks UI] Не найден CondensateCollector."); return; }
+            var hud5 = KoksInspectBuilder.BuildSet(new[]
+            {
+                new KoksInspectBuilder.Def("CondensateCollector", "Конденсатоотводчик", "Уровень воды",
+                    "Визуально проверить уровень воды в конденсатоотводчике.")
+            }, circle9.transform.position, "CanvasInspect5", "InspectMarkers5", heading, body, medium);
+            if (hud5 == null) return;
+            var condTarget = FindT("ExamCondensateTarget");
+            if (condTarget == null) Debug.LogWarning("[Koks UI] Нет объекта ExamCondensateTarget: ромбик встанет на модель, а осмотр пойдёт по всей модели.");
+            foreach (var p in hud5.points)
+            {
+                p.markerSize = 0.2f;
+                p.markerPull = 0.8f;
+                p.markerAtCenter = true;
+                p.anchor = condTarget;     // ромбик и луч — только у этой точки в яме
+                EditorUtility.SetDirty(p);
+            }
             var w9 = Win("CanvasStep9", circle9.transform.position, heading, body, medium,
                 "Шаг 9", "Конденсатоотводчик",
-                "Визуально осмотрите конденсатоотводчик и проверьте уровень воды.",
-                "Что проверить", new[] { "Осмотрите конденсатоотводчик", "Проверьте уровень воды" },
-                "Осматриваю…", 3f);
+                "Последний этап осмотра — конденсатоотводчик. Наведите луч на ромбик и удерживайте, пока шкала не заполнится.",
+                "Что проверить", new[] { "Визуально проверьте уровень воды в конденсатоотводчике" },
+                "Приступить к осмотру", 0f);
             var done9 = Win("CanvasStep9Done", circle9.transform.position, heading, body, medium,
                 "Шаг 9 выполнен", "Конденсатоотводчик осмотрен",
                 "Уровень воды в конденсатоотводчике проверен.",
@@ -272,10 +290,10 @@ namespace KoksUI.Editor
             if (m9 == null) m9 = circle9.AddComponent<StepMarker>();
             m9.window = w9;
             EditorUtility.SetDirty(m9);
-            var ch1 = w9.GetComponent<WindowChain>();
-            if (ch1 == null) ch1 = w9.gameObject.AddComponent<WindowChain>();
-            ch1.window = w9; ch1.next = done9;
-            EditorUtility.SetDirty(ch1);
+            hud5.startWindow = w9;
+            hud5.completionWindow = done9;
+            var ch1 = w9.GetComponent<WindowChain>();     // старая цепочка w9→done9 больше не нужна: дальше ведёт осмотр
+            if (ch1 != null) { ch1.next = null; EditorUtility.SetDirty(ch1); }
             var ch2 = done9.GetComponent<WindowChain>();
             if (ch2 == null) ch2 = done9.gameObject.AddComponent<WindowChain>();
             ch2.window = done9; ch2.next = finish;
@@ -286,7 +304,7 @@ namespace KoksUI.Editor
             sl.sceneName = "MenuScene";
             EditorUtility.SetDirty(sl);
 
-            foreach (var h in new[] { hud3, hud4 }) EditorUtility.SetDirty(h);
+            foreach (var h in new[] { hud3, hud4, hud5 }) EditorUtility.SetDirty(h);
 
             // ===== всё последующее скрыто при старте =====
             var flowTr = FindT("StepFlow", true);
