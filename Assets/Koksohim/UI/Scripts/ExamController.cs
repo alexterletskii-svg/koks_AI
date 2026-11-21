@@ -9,7 +9,7 @@ namespace KoksUI
     /// <summary>
     /// Режим «Экзамен» в FirstScene. В обучении (ExamMode.Active == false) выключается и ничего не делает.
     /// В экзамене: прячет подсказки обучения (синие круги, окна шагов, ромбики и карточки), игрок осматривает
-    /// детали сам — держит луч на детали 2 секунды. Считает 9 заданий и время (с входа в газовый тоннель),
+    /// детали сам — держит луч на детали 2 секунды. Считает задания сценария (ScenarioDefinition) и время (с входа в газовый тоннель),
     /// завершает экзамен, когда игрок нажимает ручку двери выхода и подтверждает завершение, и показывает итоговое окно.
     /// </summary>
     [DefaultExecutionOrder(-1000)]
@@ -17,6 +17,10 @@ namespace KoksUI
     {
         [Tooltip("Для проверки в редакторе: запустить FirstScene сразу в режиме экзамена, минуя меню")]
         public bool forceExam;
+
+        [Header("Сценарий")]
+        [Tooltip("Описание заданий. Пусто — берётся Resources/Scenarios/TunnelInspection, а если его нет — встроенный «Осмотр тоннелей»")]
+        public ScenarioDefinition scenario;
 
         [Header("Сколько секунд держать")]
         public float inspectSeconds = 2f;
@@ -28,9 +32,9 @@ namespace KoksUI
         [Tooltip("Дверь выхода, на которую вешается журнал (ищется по имени door.003 / Door1)")]
         public Transform journalDoor;
         public Transform condensate;
-        [Tooltip("Точка, куда смотреть при осмотре конденсатоотводчика (пустой объект в яме). Если пусто — ищется объект ExamCondensateTarget")]
+        [Tooltip("Точка, на которую наводят луч при осмотре конденсатоотводчика (пустой объект в яме). Если пусто — ищется объект ExamCondensateTarget")]
         public Transform condensateTarget;
-        [Tooltip("Радиус зоны взгляда вокруг точки конденсатоотводчика, м")]
+        [Tooltip("Радиус зоны вокруг точки конденсатоотводчика, в которой луч считается наведённым, м")]
         public float condensateRadius = 0.6f;
         public DrainValve drain;
         public JournalWindow journal;
@@ -67,20 +71,11 @@ namespace KoksUI
         };
         public string tunnelButton = "Начать осмотр";
 
-        public static readonly string[] TaskNames =
-        {
-            "Выбор средств индивидуальной защиты",
-            "Осмотр газовоздушных клапанов",
-            "Осмотр кантовочных кранов",
-            "Крышки устройства обезграфичивания",
-            "Осмотр газопроводов",
-            "Запись в эксплуатационный журнал",
-            "Штанги и канаты кантовочного механизма",
-            "Блочки и опорные ролики",
-            "Сточная линия: открыть и закрыть кран",
-            "Осмотр конденсатоотводчика"
-        };
-        const int Ppe = 0, Journal = 5, Drain = 8, Condensate = 9, GasPipe = 4;
+        /// <summary>Названия заданий текущего сценария (для итогового окна и сборщика меню 20).</summary>
+        public static string[] TaskNames { get { return ScenarioDefinition.Load().Names(); } }
+
+        ScenarioDefinition sc;
+        int ppeIdx, journalIdx, drainIdx, condIdx;
 
         class Pt
         {
@@ -96,28 +91,23 @@ namespace KoksUI
         readonly List<Pt> pts = new List<Pt>();
         readonly List<GameObject> exitCanvases = new List<GameObject>();
         float finishCooldown;
-        readonly bool[] done = new bool[TaskNames.Length];
+        bool[] done;
+        readonly List<SessionError> errors = new List<SessionError>();
         bool started, finished;
         float startTime;
+        System.DateTime startedAt;
         float condHeld, doorHeld;
         float ringShown;
         Pt drainPt;
         XRRayInteractor[] rays;
         float raysTime = -100f;
 
-        static int TaskOf(InspectPoint p)
+        int TaskOf(InspectPoint p) { return sc.TaskOf(p.group, p.title); }
+
+        void AddError(string code, string text)
         {
-            string g = p.group ?? "", t = p.title ?? "";
-            if (g.StartsWith("Клапан")) return 1;
-            if (g == "Кантовочные краны") return 2;
-            if (g == "Обезграфичивание") return 3;
-            if (g == "Газопроводы") return GasPipe;
-            if (g == "Сточные линии") return Drain;
-            if (g.StartsWith("Конденсат")) return Condensate;
-            // кантовочный механизм: штанги и канаты — одно задание, блочки (ролики) и опорные ролики — другое
-            if (g == "Кантовочный механизм" && (t.StartsWith("Штанг") || t.StartsWith("Канат"))) return 6;
-            if (g == "Кантовочный механизм" || g.StartsWith("Ролик")) return 7;
-            return -1;
+            errors.Add(new SessionError { code = code, text = text, atSeconds = started ? Time.time - startTime : 0f });
+            Debug.Log("[Exam] ошибка: " + code + " — " + text);
         }
 
         void Awake()
@@ -125,7 +115,18 @@ namespace KoksUI
             if (forceExam) ExamMode.Active = true;
             if (!ExamMode.Active) { Debug.Log("[Exam] режим обучения (ExamMode.Active=false). Для экзамена запускайте из MenuScene или включите forceExam."); enabled = false; return; }
             Debug.Log("[Exam] режим экзамена включён");
-            done[Ppe] = ExamMode.PpeChecked && ExamMode.PpeOk;
+            ScenarioDefinition.ClearCache();
+            sc = scenario != null ? scenario : ScenarioDefinition.Load();
+            ppeIdx = sc.IndexOf(TaskKind.Ppe); journalIdx = sc.IndexOf(TaskKind.Journal);
+            drainIdx = sc.IndexOf(TaskKind.Drain); condIdx = sc.IndexOf(TaskKind.RayPoint);
+            done = new bool[sc.Count];
+            if (ppeIdx >= 0) done[ppeIdx] = ExamMode.PpeChecked && ExamMode.PpeOk;
+            if (!ExamMode.PpeChecked) AddError("ppe_not_checked", "Средства защиты не проверялись");
+            else
+            {
+                if (!ExamMode.PpeOk) AddError("ppe_wrong", "Неверный набор средств защиты");
+                if (!ExamMode.GasAnalyzerOn) AddError("no_gas_analyzer", "Газоанализатор не выбран");
+            }
 
             // вводное окно и окно входа в тоннель — тексты экзамена (до того, как окна применят свои тексты)
             var intro = FindFirstObjectByType<IntroWindow>(FindObjectsInactive.Include);
@@ -172,19 +173,19 @@ namespace KoksUI
                 int task = TaskOf(ip);
                 ip.enabled = false;
                 if (ip.marker != null) ip.marker.gameObject.SetActive(false);
-                if (task < 0 || task == Condensate) continue;   // конденсатоотводчик считается взглядом (его коллайдер на весь тоннель)
-                var p = new Pt { ip = ip, task = task, isDrain = task == Drain };
+                if (task < 0 || sc.tasks[task].kind == TaskKind.RayPoint) continue;   // осмотр точки лучом считается отдельно (коллайдер детали на весь тоннель)
+                var p = new Pt { ip = ip, task = task, isDrain = task == drainIdx };
                 p.xi = ip.GetComponent<XRSimpleInteractable>();
                 p.rends = ip.GetComponentsInChildren<Renderer>();
                 pts.Add(p);
                 if (p.isDrain) drainPt = p;
             }
             // какие детали входят в задания (для проверки в Console)
-            for (int t = 0; t < TaskNames.Length; t++)
+            for (int t = 0; t < sc.Count; t++)
             {
                 var names = new List<string>();
                 foreach (var q in pts) if (q.task == t && !names.Contains(Key(q))) names.Add(Key(q));
-                if (names.Count > 0) Debug.Log("[Exam] " + TaskNames[t] + ": " + string.Join("; ", names));
+                if (names.Count > 0) Debug.Log("[Exam] " + sc.tasks[t].name + ": " + string.Join("; ", names));
             }
 
             drain = drain != null ? drain : FindFirstObjectByType<DrainValve>(FindObjectsInactive.Include);
@@ -193,16 +194,20 @@ namespace KoksUI
             if (journal != null) { journal.Written += OnJournalWritten; journal.entryProvider = JournalEntry; }
         }
 
-        static readonly int[] JournalNeeds = { 1, 2, 3, 4, 6, 7, 9 };
-        static readonly string[] JournalShort = { "", "клапаны", "кантовочные краны", "обезграфичивание", "газопроводы", "", "штанги и канаты", "блочки и ролики", "", "конденсатоотводчик" };
-
         JournalWindow.Entry JournalEntry()
         {
             var missing = new List<string>();
-            foreach (int t in JournalNeeds) if (!done[t]) missing.Add(JournalShort[t]);
+            for (int t = 0; t < sc.Count; t++)
+                if (sc.tasks[t].requiredForJournal && !done[t]) missing.Add(sc.tasks[t].shortName);
             var e = new JournalWindow.Entry();
-            if (missing.Count == 0) { e.valid = true; e.content = "Осмотр тоннелей выполнен."; e.remarks = "Замечаний нет"; }
-            else { e.valid = false; e.content = "Не осмотрено (" + missing.Count + "): " + string.Join(", ", missing); e.remarks = "Не принято"; }
+            if (missing.Count == 0) { e.valid = true; e.content = sc.journalOk; e.remarks = sc.journalOkRemarks; }
+            else
+            {
+                e.valid = false;
+                e.content = sc.journalMissingPrefix + " (" + missing.Count + "): " + string.Join(", ", missing);
+                e.remarks = sc.journalRejectedRemarks;
+                AddError("journal_without_inspection", "Запись в журнал до осмотра: " + string.Join(", ", missing));
+            }
             return e;
         }
 
@@ -217,7 +222,7 @@ namespace KoksUI
                 foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                     if (t.name == "ExamCondensateTarget") { condensateTarget = t; break; }
             if (condensateTarget == null) Debug.LogWarning("[Exam] нет точки ExamCondensateTarget: конденсатоотводчик считается по всей модели. Создайте пустой объект ExamCondensateTarget в яме у конденсатоотводчика.");
-            else Debug.Log("[Exam] конденсатоотводчик: смотреть на точку " + condensateTarget.position);
+            else Debug.Log("[Exam] конденсатоотводчик: навести луч на точку " + condensateTarget.position);
             if (condensate == null)
                 foreach (var t in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                     if (t.name == "CondensateCollector") { condensate = t; break; }
@@ -251,6 +256,7 @@ namespace KoksUI
             if (started) return;
             started = true;
             startTime = Time.time;
+            startedAt = System.DateTime.Now;
             if (journalIcon != null) journalIcon.PlaceOnDoor(journalDoor);
             Debug.Log("[Exam] экзамен начался (вход в тоннель)");
         }
@@ -258,7 +264,7 @@ namespace KoksUI
         void OnJournalWritten()
         {
             if (!started || finished) return;
-            done[Journal] = true;
+            if (journalIdx >= 0) done[journalIdx] = true;
             Debug.Log("[Exam] запись в журнал сделана");
         }
 
@@ -324,36 +330,20 @@ namespace KoksUI
             return false;
         }
 
-        // взгляд: центр модели почти по центру поля зрения, не дальше 6 м и не за стеной
-        static bool GazeAt(Transform root, Bounds b)
+        // луч любой руки проходит рядом с точкой (ограждение у точки не мешает), не дальше 12 м
+        bool RayNearPoint(Vector3 point, float radius)
         {
-            Camera cam = Camera.main;
-            if (cam == null) return false;
-            Transform c = cam.transform;
-            Vector3 to = b.center - c.position;
-            float dist = to.magnitude;
-            if (dist > 6f || Vector3.Angle(c.forward, to) > 12f) return false;
-            RaycastHit hit;
-            if (FirstHit(c, out hit))
+            RefreshRays();
+            foreach (var r in rays)
             {
-                Transform h = hit.collider.transform;
-                if (h == root || h.IsChildOf(root)) return true;
-                if (hit.distance < dist - b.extents.magnitude - 0.5f) return false;   // заслонено
+                if (!RayVisible(r)) continue;
+                Transform t = r.rayOriginTransform != null ? r.rayOriginTransform : r.transform;
+                Vector3 to = point - t.position;
+                float along = Vector3.Dot(to, t.forward);
+                if (along < 0.2f || along > 12f) continue;
+                if (Vector3.Cross(t.forward, to).magnitude <= radius + along * 0.02f) return true;
             }
-            return true;
-        }
-
-        // взгляд на точку: она в центре поля зрения (с допуском на радиус), не дальше 5 м; решётки над ямой не мешают
-        static bool GazePoint(Vector3 point, float radius)
-        {
-            Camera cam = Camera.main;
-            if (cam == null) return false;
-            Transform c = cam.transform;
-            Vector3 to = point - c.position;
-            float dist = to.magnitude;
-            if (dist > 5f) return false;
-            float maxAngle = Mathf.Max(10f, Mathf.Atan2(radius, Mathf.Max(0.1f, dist)) * Mathf.Rad2Deg);
-            return Vector3.Angle(c.forward, to) <= maxAngle;
+            return false;
         }
 
         static Bounds BoundsOf(Renderer[] rs, Vector3 fallback)
@@ -451,19 +441,15 @@ namespace KoksUI
                     if (cand.held >= inspectSeconds) Complete(cand);
                 }
 
-                // конденсатоотводчик (CondensateCollector): как в обучении — посмотреть на него 3 секунды (или навести луч)
-                if (!done[Condensate] && (condensate != null || condensateTarget != null))
+                // конденсатоотводчик: держать луч на точке ExamCondensateTarget 3 секунды
+                if (condIdx >= 0 && !done[condIdx] && (condensate != null || condensateTarget != null))
                 {
                     bool look;
-                    if (condensateTarget != null) look = GazePoint(condensateTarget.position, condensateRadius);
-                    else
-                    {
-                        Bounds cb = BoundsOf(condensate.GetComponentsInChildren<Renderer>(), condensate.position);
-                        look = GazeAt(condensate, cb) || RayAt(condensate, null, cb);
-                    }
+                    if (condensateTarget != null) look = RayNearPoint(condensateTarget.position, condensateRadius);
+                    else look = RayAt(condensate, null, BoundsOf(condensate.GetComponentsInChildren<Renderer>(), condensate.position));
                     condHeld = look ? condHeld + dt : Mathf.Max(0f, condHeld - dt * 1.5f);
                     if (cand == null && condHeld > 0f) ring = Mathf.Max(ring, condHeld / condensateSeconds);
-                    if (condHeld >= condensateSeconds) { done[Condensate] = true; Debug.Log("[Exam] конденсатоотводчик осмотрен"); }
+                    if (condHeld >= condensateSeconds) { done[condIdx] = true; Debug.Log("[Exam] конденсатоотводчик осмотрен"); }
                 }
             }
             UpdateRing(ring, blocked);
@@ -494,10 +480,10 @@ namespace KoksUI
 
         void RecountTask(int task)
         {
-            if (task == Drain) return;
+            if (task == drainIdx) return;
             foreach (var q in pts) if (q.task == task && !q.done) return;
             done[task] = true;
-            Debug.Log("[Exam] задание выполнено: " + TaskNames[task]);
+            Debug.Log("[Exam] задание выполнено: " + sc.tasks[task].name);
         }
 
         void UpdateRing(float v, bool blocked)
@@ -519,13 +505,27 @@ namespace KoksUI
             finished = true;
             if (ringRoot != null) ringRoot.SetActive(false);
             if (journalIcon != null) journalIcon.SetVisible(false);
-            if (drain != null) done[Drain] = drain.Closed;
+            if (drain != null && drainIdx >= 0) done[drainIdx] = drain.Closed;
             float seconds = Time.time - startTime;
             int ok = 0;
             foreach (bool d in done) if (d) ok++;
             Debug.Log("[Exam] экзамен завершён: " + ok + " из " + done.Length + ", время " + seconds.ToString("0") + " с");
-            if (result != null) result.Show(TaskNames, done, seconds);
+            SaveRecord(ok, seconds);
+            if (result != null) result.Show(sc.Names(), done, seconds);
             else Debug.LogError("[Exam] нет итогового окна: запустите Koks → Build UI → 20.");
+        }
+
+        void SaveRecord(int ok, float seconds)
+        {
+            var r = new SessionRecord
+            {
+                scenarioId = sc.id, scenarioTitle = sc.title, mode = "exam", employee = SessionInfo.Employee ?? "",
+                startedAt = startedAt.ToString("yyyy-MM-dd'T'HH:mm:ss"), seconds = seconds,
+                tasksDone = ok, tasksTotal = done.Length, passed = ok >= sc.PassNeeded
+            };
+            for (int i = 0; i < done.Length; i++) r.tasks.Add(new TaskResult { name = sc.tasks[i].name, done = done[i] });
+            r.errors.AddRange(errors);
+            ResultStore.Save(r);
         }
     }
 }
