@@ -166,6 +166,7 @@ namespace KoksUI
             if (!allFired && points.Count > 0 && done >= points.Count)
             {
                 allFired = true;
+                Debug.Log("[Inspect] все точки осмотрены (" + name + "): итоговое окно = " + (completionWindow != null ? completionWindow.name : "нет") + ", включить после осмотра: " + (activateOnComplete != null ? activateOnComplete.Length : 0) + " шт., открытых окон сейчас: " + StepWindow.OpenCount);
                 current = null;
                 HideAll();
                 onAllInspected.Invoke();
@@ -179,7 +180,14 @@ namespace KoksUI
         System.Collections.IEnumerator ShowWhenFree(StepWindow w)
         {
             yield return null;
-            while (StepWindow.AnyOpen) yield return null;
+            float waited = 0f;
+            while (StepWindow.AnyOpen)
+            {
+                waited += Time.unscaledDeltaTime;
+                if (waited > 2f && waited < 2.1f) Debug.LogWarning("[Inspect] итоговое окно " + w.name + " ждёт: где-то считается открытым окно (счётчик " + StepWindow.OpenCount + ")");
+                yield return null;
+            }
+            if (w.IsOpen) Debug.LogWarning("[Inspect] итоговое окно " + w.name + " уже считается открытым — повторный показ пропущен");
             w.Show();
         }
 
