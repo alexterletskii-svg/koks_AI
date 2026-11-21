@@ -35,6 +35,8 @@ namespace KoksUI
         public bool markerAtCenter = false;
         [Tooltip("Наведение на сам ромбик: луч, прошедший рядом с ромбиком (даже сквозь ограждение), засчитывается как наведение на деталь")]
         public bool aimAtMarker = true;
+        [Tooltip("Если задана — ромбик ставится в эту точку, а осмотр идёт только по лучу на ромбик (для деталей с огромным коллайдером). Для конденсатоотводчика находится сам: объект ExamCondensateTarget")]
+        public Transform anchor;
 
         [Tooltip("Писать в Console наведение/осмотр (для отладки)")]
         public bool debugLog = true;
@@ -74,6 +76,11 @@ namespace KoksUI
 
         void Start()
         {
+            if (anchor == null && (group ?? "").StartsWith("Конденсат"))
+            {
+                var go = GameObject.Find("ExamCondensateTarget");
+                if (go != null) anchor = go.transform;
+            }
             var own = GetComponent<Renderer>();
             rends = own != null ? new[] { own } : GetComponentsInChildren<Renderer>();
             UpdateMarkerPosition();
@@ -89,7 +96,9 @@ namespace KoksUI
         // объект может двигаться анимацией — маркер едет вместе с ним
         void UpdateMarkerPosition()
         {
-            if (rends == null || rends.Length == 0)
+            if (anchor != null)
+                MarkerPosition = anchor.position + markerOffset;
+            else if (rends == null || rends.Length == 0)
                 MarkerPosition = transform.position + Vector3.up * markerGap + markerOffset;
             else
             {
@@ -174,7 +183,7 @@ namespace KoksUI
             bool want = false;
             if (hud == null || (hud.Active && !(hud.AllDone && InspectHud.OtherRunning(hud))))
             {
-                want = interactable != null && interactable.isHovered;
+                want = anchor == null && interactable != null && interactable.isHovered;
                 if (!want && aimAtMarker && hud != null && !hud.AllDone)
                 {
                     want = AimedAt();
