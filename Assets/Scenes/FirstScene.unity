@@ -594,6 +594,7 @@ MonoBehaviour:
   markerPull: 0.6
   markerAtCenter: 1
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 933880208}
   marker: {fileID: 260817263}
@@ -4269,6 +4270,7 @@ MonoBehaviour:
   markerPull: 1
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 1789779817}
   marker: {fileID: 2129036473}
@@ -10465,6 +10467,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 1789779817}
   marker: {fileID: 1419933658}
@@ -15387,9 +15390,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -19036,6 +19039,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 938551179}
   marker: {fileID: 1437606518}
@@ -20571,6 +20575,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 1789779817}
   marker: {fileID: 1184155882}
@@ -23600,6 +23605,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 1789779817}
   marker: {fileID: 591259183}
@@ -33346,9 +33352,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -41043,9 +41049,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -42243,9 +42249,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -42466,9 +42472,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -45347,9 +45353,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -46370,6 +46376,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 938551179}
   marker: {fileID: 1724627973}
@@ -47579,9 +47586,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -52837,9 +52844,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -53902,6 +53909,7 @@ MonoBehaviour:
   markerPull: 0.8
   markerAtCenter: 1
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 0}
   marker: {fileID: 0}
@@ -62991,9 +62999,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -71477,9 +71485,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -75997,6 +76005,7 @@ MonoBehaviour:
   markerPull: 1.2
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 1789779817}
   marker: {fileID: 467778290}
@@ -77188,6 +77197,7 @@ MonoBehaviour:
   markerPull: 0.6
   markerAtCenter: 1
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 933880208}
   marker: {fileID: 1738696253}
@@ -78976,9 +78986,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -80413,9 +80423,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -81600,6 +81610,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 1789779817}
   marker: {fileID: 185366104}
@@ -82026,9 +82037,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -84129,9 +84140,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -88517,6 +88528,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 0}
   marker: {fileID: 0}
@@ -89894,7 +89906,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 2
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!223 &1361873778
 Canvas:
   m_ObjectHideFlags: 0
@@ -92407,6 +92419,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 938551179}
   marker: {fileID: 1892891786}
@@ -101854,6 +101867,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 0}
   marker: {fileID: 0}
@@ -103219,6 +103233,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 1208646268}
   marker: {fileID: 1306017183}
@@ -105148,6 +105163,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 1789779817}
   marker: {fileID: 138680105}
@@ -106877,6 +106893,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 0}
   marker: {fileID: 0}
@@ -108334,9 +108351,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -110415,6 +110432,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 938551179}
   marker: {fileID: 617821273}
@@ -110737,6 +110755,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 938551179}
   marker: {fileID: 986481269}
@@ -114121,6 +114140,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 029427dec8584304691cd3ae8387f0e7, type: 3}
   m_PrefabInstance: {fileID: 1788530432}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1788853154
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1788853155}
+  m_Layer: 0
+  m_Name: CoverTarget_obezgr
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1788853155
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1788853154}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5.904, y: -1.263, z: 28.408}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1789779815
 GameObject:
   m_ObjectHideFlags: 0
@@ -117341,6 +117391,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KoksUI.ExamController
   forceExam: 0
+  scenario: {fileID: 0}
   inspectSeconds: 2
   doorSeconds: 1.5
   condensateSeconds: 3
@@ -133113,6 +133164,7 @@ MonoBehaviour:
   markerPull: 0.25
   markerAtCenter: 0
   aimAtMarker: 1
+  anchor: {fileID: 0}
   debugLog: 1
   hud: {fileID: 938551179}
   marker: {fileID: 403280954}
@@ -134433,9 +134485,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -135801,9 +135853,9 @@ MonoBehaviour:
   m_fontSize: 27
   m_fontSizeBase: 27
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 16
+  m_fontSizeMax: 27
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -139984,3 +140036,4 @@ SceneRoots:
   - {fileID: 2114899308}
   - {fileID: 1361873779}
   - {fileID: 588370723}
+  - {fileID: 1788853155}
