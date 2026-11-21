@@ -51,7 +51,23 @@ namespace KoksUI
 
         void Open()
         {
-            if (journal != null && !StepWindow.AnyOpen) journal.Show();
+            if (journal == null) return;
+            if (journal.IsOpen) { journal.Hide(); return; }      // тот же значок закрывает журнал
+            if (!StepWindow.AnyOpen) journal.Show();
+        }
+
+        TMPro.TMP_Text caption;
+        string captionNormal;
+
+        /// <summary>Пока журнал открыт, надпись на значке — «Закрыть».</summary>
+        public void SetCloseMode(bool close)
+        {
+            if (caption == null)
+            {
+                foreach (var t in GetComponentsInChildren<TMPro.TMP_Text>(true)) { caption = t; captionNormal = t.text; break; }
+                if (caption == null) return;
+            }
+            caption.text = close ? "Закрыть" : captionNormal;
         }
 
         /// <summary>Значок висит перед взглядом слева (на уровне глаз), не закрывая центр, и плавно следует за головой.</summary>

@@ -121,7 +121,17 @@ namespace KoksUI
         {
             if (stepLabel != null) stepLabel.text = stepText;
             if (titleLabel != null) titleLabel.text = title;
-            if (descriptionLabel != null) descriptionLabel.text = description;
+            if (descriptionLabel != null)
+            {
+                // длинное описание само уменьшается и не наезжает на «Что проверить»
+                if (!descriptionLabel.enableAutoSizing)
+                {
+                    descriptionLabel.fontSizeMax = descriptionLabel.fontSize;
+                    descriptionLabel.fontSizeMin = 16f;
+                    descriptionLabel.enableAutoSizing = true;
+                }
+                descriptionLabel.text = description;
+            }
             if (checksHeaderLabel != null) checksHeaderLabel.text = checksHeader;
 
             int pages = Pages();

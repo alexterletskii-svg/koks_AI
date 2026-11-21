@@ -398,7 +398,8 @@ namespace KoksUI
         {
             if (finished) return;
             bool blocked = StepWindow.AnyOpen;
-            if (journalIcon != null) journalIcon.SetVisible(started && !blocked);
+            bool journalOpen = journal != null && journal.IsOpen;
+            if (journalIcon != null) { journalIcon.SetVisible(started && (!blocked || journalOpen)); journalIcon.SetCloseMode(journalOpen); }
             if (!started) return;
 
             // ручка двери открыла окно перехода — показываем своё: 2 перехода и «Завершить экзамен»

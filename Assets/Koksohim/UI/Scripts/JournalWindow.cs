@@ -92,13 +92,13 @@ namespace KoksUI
             var rt = (RectTransform)go.transform;
             rt.SetParent(parent, false);
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0f, 1f);
-            rt.sizeDelta = new Vector2(64f, 64f);
-            rt.anchoredPosition = new Vector2(parent.sizeDelta.x - 92f, -20f);
+            rt.sizeDelta = new Vector2(76f, 76f);
+            rt.anchoredPosition = new Vector2(parent.sizeDelta.x - 100f, -14f);
             rt.SetAsLastSibling();
             var bg = go.AddComponent<Image>();
             bg.color = new Color(0.55f, 0.13f, 0.1f, 1f);
             bg.raycastTarget = true;
-            bg.raycastPadding = new Vector4(-12f, -12f, -12f, -12f);
+            bg.canvasRenderer.cullTransparentMesh = false;
             for (int i = 0; i < 2; i++)
             {
                 var bar = new GameObject("Bar", typeof(RectTransform));
@@ -119,7 +119,8 @@ namespace KoksUI
             c.pressedColor = new Color(0.8f, 0.6f, 0.55f, 1f);
             c.selectedColor = Color.white;
             closeButton.colors = c;
-            closeButton.onClick.AddListener(() => { if (!busy) Hide(); });
+            closeButton.onClick.AddListener(Hide);
+            UIDepth.AlwaysOnTop(go);
         }
 
         public bool IsOpen { get { return open; } }
@@ -150,6 +151,7 @@ namespace KoksUI
             if (!gameObject.activeSelf) gameObject.SetActive(true);
             if (canvas != null) canvas.enabled = true;
             Place();
+            moving = false;
             if (playSound) UISound.WindowOpened();
             StartFade(0f, 1f, false);
         }
@@ -161,9 +163,33 @@ namespace KoksUI
             StartFade(group != null ? group.alpha : 1f, 0f, true);
         }
 
-        void Update()
+        Vector3 moveTo;
+        bool moving;
+
+        // окно стоит на месте (чтобы на него можно было навестись) и всегда повёрнуто к игроку;
+        // если игрок ушёл далеко или отвернулся — окно само перелетает перед ним и снова замирает
+        void LateUpdate()
         {
-            // окно стоит на месте, где открылось: если оно «плывёт» за головой, луч промахивается мимо кнопки
+            if (!open || !ExamMode.Active) return;
+            Camera cam = Camera.main;
+            if (cam == null) return;
+            Face(cam);
+            Vector3 to = transform.position - cam.transform.position;
+            float flat = new Vector3(to.x, 0f, to.z).magnitude;
+            Vector3 f = cam.transform.forward; f.y = 0f;
+            float ang = f.sqrMagnitude > 0.01f ? Vector3.Angle(f, new Vector3(to.x, 0f, to.z)) : 0f;
+            if (!moving && (flat > distance * 1.8f || ang > 60f))
+            {
+                float d = WindowFit.Free(cam.transform, f.sqrMagnitude > 0.01f ? f.normalized : Vector3.forward, distance, 20f);
+                transform.localScale = baseScale * (d / distance);
+                moveTo = cam.transform.position + (f.sqrMagnitude > 0.01f ? f.normalized : Vector3.forward) * d + Vector3.down * 0.1f * (d / distance);
+                moving = true;
+            }
+            if (moving)
+            {
+                transform.position = Vector3.Lerp(transform.position, moveTo, 1f - Mathf.Exp(-5f * Time.unscaledDeltaTime));
+                if ((transform.position - moveTo).sqrMagnitude < 0.0025f) moving = false;
+            }
         }
 
         void Place()
@@ -196,8 +222,8 @@ namespace KoksUI
             {
                 if (l == null) continue;
                 l.textWrappingMode = TextWrappingModes.NoWrap;
-                l.overflowMode = TextOverflowModes.Ellipsis;
-                l.fontSize = 24f;
+                l.overflowMode = TextOverflowModes.Overflow;
+                l.fontSize = 22f;
                 l.maxVisibleCharacters = 99999;
             }
             string d = "", c = "", r = "";
@@ -210,6 +236,13 @@ namespace KoksUI
             if (contentText != null) contentText.text = c;
             if (remarksText != null) remarksText.text = r;
             if (signature != null) signature.fillAmount = anyValid && skipLast < 0 ? 1f : 0f;
+        }
+
+        // строка журнала — одна строка: длинный текст обрезается с «…», иначе он вылезает за колонку
+        static string Fit(string t, int max)
+        {
+            t = (t ?? "").Replace("\n", " ");
+            return t.Length <= max ? t : t.Substring(0, max - 1).TrimEnd() + "…";
         }
 
         void OnAction()
@@ -227,7 +260,7 @@ namespace KoksUI
             if (actionLabel != null) actionLabel.text = writingText;
 
             Entry e = entryProvider != null ? entryProvider() : new Entry { content = content, remarks = remarks, valid = true };
-            entries.Add(new[] { System.DateTime.Now.ToString(dateFormat), e.content, e.remarks });
+            entries.Add(new[] { System.DateTime.Now.ToString(dateFormat), Fit(e.content, 42), Fit(e.remarks, 16) });
             while (entries.Count > MaxEntries) entries.RemoveAt(0);
             if (e.valid) anyValid = true;
             // запись принимается (или нет) сразу: закрытие окна не потеряет результат
