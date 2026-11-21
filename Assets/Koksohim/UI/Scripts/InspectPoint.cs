@@ -76,10 +76,16 @@ namespace KoksUI
 
         void Start()
         {
-            if (anchor == null && (group ?? "").StartsWith("Конденсат"))
+            if (anchor == null)
             {
-                var go = GameObject.Find("ExamCondensateTarget");
-                if (go != null) anchor = go.transform;
+                string target = (group ?? "").StartsWith("Конденсат") ? "ExamCondensateTarget"
+                              : (group ?? "").StartsWith("Обезграф") ? "CoverTarget_obezgr" : null;
+                if (target != null)
+                {
+                    var go = GameObject.Find(target);
+                    if (go != null) anchor = go.transform;
+                    else Debug.LogWarning("[Inspect] не найден объект " + target + ": ромбик «" + group + "» встанет на модель");
+                }
             }
             var own = GetComponent<Renderer>();
             rends = own != null ? new[] { own } : GetComponentsInChildren<Renderer>();
